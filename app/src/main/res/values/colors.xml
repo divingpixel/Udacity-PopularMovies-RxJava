@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorCandyWhite">#FFFBEC</color>
+    <color name="colorBackground">#330000</color>
+    <color name="colorPrimary">#920000</color>
+    <color name="colorPrimaryDark">#610000</color>
+    <color name="colorPrimaryLight">#FFB74D</color>
+    <color name="colorPrimaryHiLight">#FFF176</color>
+    <color name="colorAccent">#FF9800</color>
+</resources>

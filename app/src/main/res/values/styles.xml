@@ -1,0 +1,16 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.DarkActionBar">
+    <!-- Customize your theme here. -->
+        <item name="android:colorBackground">@color/colorBackground</item>
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:textColor">@color/colorPrimaryHiLight</item>
+        <item name="android:textColorSecondary">@color/colorPrimaryLight</item>
+        <item name="android:preferenceStyle">@style/Preference.PreferenceScreen</item>
+        <item name="preferenceTheme">@style/PreferenceFragment</item>
+    </style>
+
+</resources>

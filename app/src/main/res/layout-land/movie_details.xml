@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <android.support.v7.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="@dimen/small_space"
+        app:cardBackgroundColor="@color/colorCandyWhite">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/detail_poster"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="@dimen/small_space"
+                android:layout_weight="1"
+                android:contentDescription="@string/no_text"
+                android:scaleType="fitCenter"
+                app:srcCompat="@drawable/movie_night_poster" />
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight=".5"
+                android:padding="@dimen/small_space">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/detail_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-light"
+                        android:text="@string/title"
+                        android:textAlignment="center"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                        android:textColor="@color/colorPrimary"
+                        android:textSize="@dimen/text_title" />
+
+                    <TextView
+                        android:id="@+id/detail_date"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/date_dummy"
+                        android:textAlignment="center"
+                        android:textColor="@color/colorPrimaryDark" />
+
+                    <android.support.constraint.ConstraintLayout
+                        android:id="@+id/layout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:id="@+id/detail_rating_text"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/rating"
+                            android:textColor="@color/colorBackground"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <RatingBar
+                            android:id="@+id/detail_rating"
+                            style="@style/Widget.AppCompat.RatingBar.Small"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginBottom="1dp"
+                            android:isIndicator="true"
+                            android:numStars="5"
+                            android:stepSize="0.1"
+                            app:layout_constraintBottom_toBottomOf="@+id/detail_rating_text"
+                            app:layout_constraintStart_toEndOf="@+id/detail_rating_text" />
+
+                        <ImageView
+                            android:id="@+id/detail_favorite"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:contentDescription="@string/no_text"
+                            android:padding="@dimen/small_space"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:srcCompat="@drawable/ic_favorite_border_24dp" />
+
+                    </android.support.constraint.ConstraintLayout>
+
+                    <TextView
+                        android:id="@+id/title_trailers"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@color/colorPrimaryLight"
+                        android:fontFamily="sans-serif-light"
+                        android:padding="@dimen/tiny_space"
+                        android:text="@string/title_trailers"
+                        android:textColor="@color/colorPrimary"
+                        android:textSize="@dimen/text_heading" />
+
+                    <android.support.v7.widget.RecyclerView
+                        android:id="@+id/detail_trailers_rv"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                    </android.support.v7.widget.RecyclerView>
+
+                    <TextView
+                        android:id="@+id/title_synopsis"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@color/colorPrimaryLight"
+                        android:fontFamily="sans-serif-light"
+                        android:padding="@dimen/tiny_space"
+                        android:text="@string/title_synopsis"
+                        android:textColor="@color/colorPrimary"
+                        android:textSize="@dimen/text_heading" />
+
+                    <TextView
+                        android:id="@+id/detail_synopsis"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-light"
+                        android:padding="@dimen/tiny_space"
+                        android:text="@string/no_text"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+                        android:textColor="@color/colorBackground"
+                        android:textSize="14sp"
+                        tools:text="@string/title_synopsis" />
+
+                    <TextView
+                        android:id="@+id/title_reviews"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@color/colorPrimaryLight"
+                        android:fontFamily="sans-serif-light"
+                        android:padding="@dimen/tiny_space"
+                        android:text="@string/title_reviews"
+                        android:textColor="@color/colorPrimary"
+                        android:textSize="@dimen/text_heading" />
+
+                    <android.support.v7.widget.RecyclerView
+                        android:id="@+id/detail_reviews_rv"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                    </android.support.v7.widget.RecyclerView>
+                </LinearLayout>
+            </ScrollView>
+
+        </LinearLayout>
+    </android.support.v7.widget.CardView>
+</FrameLayout>

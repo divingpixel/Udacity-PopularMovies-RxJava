@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/colorCandyWhite"
+    android:padding="@dimen/tiny_space">
+
+    <TextView
+        android:id="@+id/trailer_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:fontFamily="sans-serif-condensed-light"
+        android:gravity="start|center_vertical"
+        android:padding="@dimen/tiny_space"
+        android:singleLine="true"
+        android:text="@string/watch_trailer"
+        android:textColor="@color/colorBackground"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <ImageView
+        android:id="@+id/trailer_youtube"
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/youtube_logo"
+        android:layout_gravity="center_vertical"
+        android:layout_weight="0"
+        android:adjustViewBounds="true"
+        android:contentDescription="@string/no_text"
+        android:scaleType="fitCenter"
+        app:srcCompat="@drawable/ic_youtube_logo" />
+
+</LinearLayout>

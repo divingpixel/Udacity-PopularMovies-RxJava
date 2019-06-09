@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/colorCandyWhite"
+    android:orientation="vertical"
+    android:padding="@dimen/tiny_space">
+
+    <TextView
+        android:id="@+id/review_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-light"
+        android:padding="@dimen/tiny_space"
+        android:text="@string/title_reviews"
+        android:textColor="@color/colorBackground"
+        android:textSize="@dimen/text_normal"
+        android:textStyle="italic" />
+
+    <TextView
+        android:id="@+id/review_author"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-light"
+        android:padding="@dimen/tiny_space"
+        android:text="@string/title"
+        android:textAlignment="textEnd"
+        android:textColor="@color/colorPrimary"
+        android:textSize="@dimen/text_subtitle" />
+
+    <View
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/cardview_default_elevation"
+        android:layout_margin="@dimen/tiny_space"
+        android:background="@color/colorAccent" />
+
+</LinearLayout>

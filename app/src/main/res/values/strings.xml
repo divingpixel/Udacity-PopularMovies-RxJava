@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">Popular Movies</string>
+    <string name="no_text"> </string>
+    <string name="rating">Average rating</string>
+    <string name="favorite_add">Add to favorites</string>
+    <string name="favorite_del">Remove from favorites</string>
+    <string name="title">Title</string>
+    <string name="title_synopsis">Synopsis</string>
+    <string name="title_trailers">Trailers</string>
+    <string name="title_reviews">Reviews</string>
+    <string name="watch_trailer">Watch trailer</string>
+    <string name="no_movies">No movies found</string>
+    <string name="no_internet">No internet connection</string>
+    <string name="data_error">Internet data error</string>
+    <string name="release_date">Release date</string>
+    <string name="date_dummy">January 01, 2000</string>
+    <string name="menu_settings">Settings</string>
+    <string name="menu_favorites">Favorites</string>
+    <string name="menu_movies">Movie list</string>
+    <string name="settings_first_category">Results filter</string>
+    <string name="settings_movie_category">Filter movies by</string>
+    <string-array name="movie_category" translatable="false">
+        <item>the most popular movie in the last week</item>
+        <item>the top rated movie in the last week</item>
+    </string-array>
+    <string-array name="movie_category_values" translatable="false">
+        <item>popular</item>
+        <item>top_rated</item>
+    </string-array>
+</resources>
