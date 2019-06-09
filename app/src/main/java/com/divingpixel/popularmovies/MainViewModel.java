@@ -28,7 +28,7 @@ public class MainViewModel extends AndroidViewModel {
             Log.d(LOG_TAG, "Returning FAVORITES from ViewModel");
             return favorites;
         } else {
-            movies = moviesDB.myMovieDAO().loadCurrentMovies(Utils.makeDate(),PopularMovies.category);
+            movies = moviesDB.myMovieDAO().loadCurrentMovies(Utils.makeTimeStamp(),PopularMovies.category);
             Log.d(LOG_TAG, "Returning MOVIES CATEGORY " + PopularMovies.category.toUpperCase() + " from ViewModel");
             return movies;
         }

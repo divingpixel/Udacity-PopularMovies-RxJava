@@ -4,12 +4,13 @@ import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -19,6 +20,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+import android.support.v7.widget.Toolbar;
 
 import com.divingpixel.popularmovies.database.MoviesDatabase;
 import com.divingpixel.popularmovies.database.MyMovieEntry;
@@ -28,8 +30,7 @@ import com.divingpixel.popularmovies.internet.TheMovieDB;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PopularMovies extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener,
-        InternetCheck.ConnectionChangeListener, TheMovieDB.DownloadFinishListener {
+public class PopularMovies extends AppCompatActivity implements InternetCheck.ConnectionChangeListener, TheMovieDB.DownloadFinishListener {
 
     //UI states constants
     private static final int UI_LOADING = 0;
@@ -46,6 +47,7 @@ public class PopularMovies extends AppCompatActivity implements SharedPreference
     RecyclerView recyclerView;
     TextView emptyView;
     View loadingProgress;
+    private Menu actionMenu;
     private String startDate;
     private InternetCheck internetStatus;
     private MoviesDatabase moviesDB;
@@ -61,12 +63,16 @@ public class PopularMovies extends AppCompatActivity implements SharedPreference
 
         if (savedInstanceState != null && savedInstanceState.containsKey(INSTANCE_SHOW_FAVORITES)) {
             showFavorites = savedInstanceState.getBoolean(INSTANCE_SHOW_FAVORITES, false);
-            startDate = savedInstanceState.getString(INSTANCE_START_DATE, Utils.makeDate());
+            startDate = savedInstanceState.getString(INSTANCE_START_DATE, Utils.makeTimeStamp());
         }
 
         mainContext = this;
         moviesDB = MoviesDatabase.getInstance(getApplicationContext());
         movieAdapter = new MovieAdapter(movieList);
+
+        //gets the internet connection status and downloads the movie list
+        internetStatus = new InternetCheck(this.getApplication(), mainContext);
+        isConnected = internetStatus.hasConnection();
 
         // set-up the views
         emptyView = findViewById(R.id.empty_view);
@@ -74,7 +80,7 @@ public class PopularMovies extends AppCompatActivity implements SharedPreference
         recyclerView = findViewById(R.id.movie_list);
         updateUi(UI_LOADING);
 
-        //set up the recyclerview column count according to the orientation
+        //set up the recyclerView column count according to the orientation
         int orientation = this.getResources().getConfiguration().orientation;
         if (orientation == Configuration.ORIENTATION_PORTRAIT) {
             recyclerView.setLayoutManager(new GridLayoutManager(getBaseContext(), 3));
@@ -84,7 +90,7 @@ public class PopularMovies extends AppCompatActivity implements SharedPreference
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setAdapter(movieAdapter);
 
-        // set-up the click listeners for the elements in the recyclerview
+        // set-up the click listeners for the elements in the recyclerView
         recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getBaseContext(), recyclerView, new RecyclerTouchListener.ClickListener() {
             @Override
             public void onClick(View view, int position) {
@@ -98,20 +104,12 @@ public class PopularMovies extends AppCompatActivity implements SharedPreference
             }
         }));
 
-        //gets the preferences from PreferencesManager
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
-        category = sharedPreferences.getString("movie_filter", "popular");
-
-        //gets the internet connection status and downloads the movie list
-        internetStatus = new InternetCheck(this.getApplication(), mainContext);
-        isConnected = internetStatus.hasConnection();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        if (!Utils.makeDate().equalsIgnoreCase(startDate)) {
+        if (!Utils.makeTimeStamp().equalsIgnoreCase(startDate)) {
             updateMovies();
         } else {
             updateUi(UI_COMPLETE);
@@ -134,7 +132,6 @@ public class PopularMovies extends AppCompatActivity implements SharedPreference
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(this);
         internetStatus.disable();
     }
 
@@ -142,41 +139,42 @@ public class PopularMovies extends AppCompatActivity implements SharedPreference
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater menuInflater = getMenuInflater();
         menuInflater.inflate(R.menu.settings_menu, menu);
-        MenuItem item = menu.findItem(R.id.action_favorites);
-        if (showFavorites)
-            item.setIcon(R.drawable.ic_list_menu_24dp);
-        else item.setIcon(R.drawable.ic_favorite_menu_24dp);
+        actionMenu = menu;
+        actionMenu.findItem(R.id.action_popular).setIcon(R.drawable.ic_popular_menu_selected_24dp);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            Intent intent = new Intent(this, SettingsActivity.class);
-            startActivity(intent);
-            return true;
-        }
-        if (id == R.id.action_favorites) {
-            showFavorites = !showFavorites;
-            if (showFavorites)
-                item.setIcon(R.drawable.ic_list_menu_24dp);
-            else item.setIcon(R.drawable.ic_favorite_menu_24dp);
-            setUpViewModel();
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (key.equals("movie_filter")) {
-            String inQuery = sharedPreferences.getString("movie_filter", "popular");
-            Log.i("PREFERENCES CHANGED", "THE NEW MOVIE FILTER IS : " + inQuery);
-            if (!category.equalsIgnoreCase(inQuery)) {
-                category = inQuery;
+        actionMenu.findItem(R.id.action_popular).setIcon(R.drawable.ic_popular_menu_24dp);
+        actionMenu.findItem(R.id.action_topRated).setIcon(R.drawable.ic_star_menu_24dp);
+        actionMenu.findItem(R.id.action_favorites).setIcon(R.drawable.ic_favorite_menu_24dp);
+        if (id == R.id.action_popular) {
+            this.setTitle(R.string.menu_popular);
+            showFavorites = false;
+            actionMenu.findItem(R.id.action_popular).setIcon(R.drawable.ic_popular_menu_selected_24dp);
+            if (!category.equalsIgnoreCase(Utils.CATEGORY_POPULAR)) {
+                category = Utils.CATEGORY_POPULAR;
                 updateMovies();
             }
         }
+        if (id == R.id.action_topRated) {
+            this.setTitle(R.string.menu_topRated);
+            actionMenu.findItem(R.id.action_topRated).setIcon(R.drawable.ic_star_menu_selected_24dp);
+            showFavorites = false;
+            if (!category.equalsIgnoreCase(Utils.CATEGORY_TOP_RATED)) {
+                category = Utils.CATEGORY_TOP_RATED;
+                updateMovies();
+            }
+        }
+        if (id == R.id.action_favorites) {
+            this.setTitle(R.string.menu_favorites);
+            actionMenu.findItem(R.id.action_favorites).setIcon(R.drawable.ic_favorite_menu_selected_24dp);
+            showFavorites = true;
+        }
+        setUpViewModel();
+        return super.onOptionsItemSelected(item);
     }
 
     private void updateMovies() {
@@ -185,7 +183,7 @@ public class PopularMovies extends AppCompatActivity implements SharedPreference
             AppExecutors.getInstance().networkIO().execute(new Runnable() {
                 @Override
                 public void run() {
-                    startDate = Utils.makeDate();
+                    startDate = Utils.makeTimeStamp();
                     Log.i(LOG_TAG, "DOWNLOADING MOVIE DATA FOR QUERY " + PopularMovies.category);
                     TheMovieDB.getMovieList(category, moviesDB, mainContext);
                 }
@@ -202,8 +200,7 @@ public class PopularMovies extends AppCompatActivity implements SharedPreference
             public void onChanged(@Nullable List<MyMovieEntry> myMovieEntries) {
                 movieList = (ArrayList<MyMovieEntry>) myMovieEntries;
                 movieAdapter.setMovies(movieList);
-                if (movieList.size() == 0) updateUi(UI_NO_MOVIES);
-                else updateUi(UI_COMPLETE);
+                if ((movieList.size() == 0) && showFavorites) updateUi(UI_NO_MOVIES);
             }
         });
     }

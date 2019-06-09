@@ -31,7 +31,7 @@ public class InternetCheck extends ConnectivityManager.NetworkCallback {
         enable();
     }
 
-    private void enable() {
+    public void enable() {
         connectivityManager.registerNetworkCallback(networkRequest, this);
     }
 

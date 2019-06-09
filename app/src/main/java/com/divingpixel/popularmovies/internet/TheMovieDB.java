@@ -111,7 +111,7 @@ public class TheMovieDB {
             String poster = jsonObject.getString("poster_path");
             float rating = jsonObject.getLong("vote_average");
             // Create a new {@link MyMovieEntry} object from the JSON response.
-            movie = new MyMovieEntry(id, index + 1, Utils.makeDate(), title, date, synopsis, poster, rating, false, PopularMovies.category);
+            movie = new MyMovieEntry(id, index + 1, Utils.makeTimeStamp(), title, date, synopsis, poster, rating, false, PopularMovies.category);
         } catch (JSONException e) {
             //  Print a log message if an error is thrown when executing any of the above statements in the "try" block,
             Log.e("GETONEMOVIE", "Problem parsing the JSON", e);

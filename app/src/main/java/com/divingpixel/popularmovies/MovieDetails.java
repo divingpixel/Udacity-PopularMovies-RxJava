@@ -106,6 +106,24 @@ public class MovieDetails extends AppCompatActivity implements TheMovieDB.Downlo
             trailersList = findViewById(R.id.detail_trailers_rv);
             trailersList.setLayoutManager(new LinearLayoutManager(getBaseContext()));
             trailersList.setItemAnimator(new DefaultItemAnimator());
+            trailersList.addOnItemTouchListener(new RecyclerTouchListener(getBaseContext(), trailersList, new RecyclerTouchListener.ClickListener() {
+                @Override
+                public void onClick(View view, int position) {
+                    String key = trailers.get(position).getKey();
+                    //prepares two intents ome for the youtube app other for the browser in case the app doesn't exist
+                    Intent appIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:" + key));
+                    Intent webIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.youtube.com/watch?v=" + key));
+                    try {
+                        startActivity(appIntent);
+                    } catch (ActivityNotFoundException ex) {
+                        startActivity(webIntent);
+                    }
+                }
+
+                @Override
+                public void onLongClick(View view, int position) {
+                }
+            }));
             getTrailers();
 
             //setUp REVIEWS recyclerView
@@ -214,24 +232,6 @@ public class MovieDetails extends AppCompatActivity implements TheMovieDB.Downlo
                     reviewAdapter.notifyDataSetChanged();
                     reviewsList.setAdapter(reviewAdapter);
                     reviewsList.setVisibility(View.VISIBLE);
-                    trailersList.addOnItemTouchListener(new RecyclerTouchListener(getBaseContext(), trailersList, new RecyclerTouchListener.ClickListener() {
-                        @Override
-                        public void onClick(View view, int position) {
-                            String key = trailers.get(position).getKey();
-                            //prepares two intents ome for the youtube app other for the browser in case the app doesn't exist
-                            Intent appIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:" + key));
-                            Intent webIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.youtube.com/watch?v=" + key));
-                            try {
-                                startActivity(appIntent);
-                            } catch (ActivityNotFoundException ex) {
-                                startActivity(webIntent);
-                            }
-                        }
-
-                        @Override
-                        public void onLongClick(View view, int position) {
-                        }
-                    }));
                     findViewById(R.id.title_reviews).setVisibility(View.VISIBLE);
                 }
             }
