@@ -10,22 +10,21 @@ public class MyMovieEntry {
 
     @PrimaryKey
     private int mId;
-    private int mIndex;
-    private String mTitle, mDate, mSynopsis, mPosterUrl, mUpDate, mCategory;
+    private int mPopIndex,mTopIndex;
+    private String mTitle, mDate, mSynopsis, mPosterUrl;
     private float mRating;
     private boolean mFavorite;
 
-    public MyMovieEntry(int id, int index, String upDate, String title, String date, String synopsis, String posterUrl, float rating, boolean favorite, String category) {
+    public MyMovieEntry(int id, int popIndex, int topIndex, String title, String date, String synopsis, String posterUrl, float rating, boolean favorite) {
         mId = id;
-        mIndex = index;
+        mPopIndex = popIndex;
+        mTopIndex = topIndex;
         mTitle = title;
         mDate = date;
         mSynopsis = synopsis;
         mPosterUrl = posterUrl;
         mRating = rating;
         mFavorite = favorite;
-        mUpDate = upDate;
-        mCategory = category;
     }
 
     public int getId() {
@@ -36,12 +35,12 @@ public class MyMovieEntry {
         return mTitle;
     }
 
-    public String getUpDate() {
-        return mUpDate;
+    public int getPopIndex() {
+        return mPopIndex;
     }
 
-    public int getIndex() {
-        return mIndex;
+    public int getTopIndex() {
+        return mTopIndex;
     }
 
     public String getDate() {
@@ -58,10 +57,6 @@ public class MyMovieEntry {
 
     public String getSynopsis() {
         return mSynopsis;
-    }
-
-    public String getCategory() {
-        return mCategory;
     }
 
     public void setFavorite(boolean favorite) {

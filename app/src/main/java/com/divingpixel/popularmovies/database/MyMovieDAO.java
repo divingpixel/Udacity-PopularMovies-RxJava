@@ -16,8 +16,11 @@ public interface MyMovieDAO {
     @Query("SELECT * from movies WHERE mFavorite='true' ORDER BY mDate")
     LiveData<List<MyMovieEntry>> loadFavoriteMovies();
 
-    @Query("SELECT * from movies WHERE mUpDate= :upDate AND mCategory= :category ORDER BY mIndex")
-    LiveData<List<MyMovieEntry>> loadCurrentMovies(String upDate, String category);
+    @Query("SELECT * from movies WHERE mPopIndex>0 ORDER BY mPopIndex")
+    LiveData<List<MyMovieEntry>> loadPopularMovies ();
+
+    @Query("SELECT * from movies WHERE mTopIndex>0 ORDER BY mTopIndex")
+    LiveData<List<MyMovieEntry>> loadTopRatedMovies();
 
     @Insert
     void insertMovie(MyMovieEntry movieEntry);
@@ -28,8 +31,11 @@ public interface MyMovieDAO {
     @Delete
     void deleteMovie(MyMovieEntry movieEntry);
 
-    @Query("DELETE from movies WHERE mFavorite='false'")
-    void deleteNonFavorites();
+    @Query("DELETE from movies WHERE mPopIndex>0 AND mFavorite='false'")
+    void deletePopularMovies();
+
+    @Query("DELETE from movies WHERE mTopIndex>0 AND mFavorite='false'")
+    void deleteTopRatedMovies();
 
     @Query("SELECT * from movies WHERE mId= :id")
     LiveData<MyMovieEntry> loadMovieById(int id);

@@ -100,7 +100,7 @@ public class TheMovieDB {
         return output.toString();
     }
 
-    private static MyMovieEntry getOneMovie(JSONObject jsonObject, int index) {
+    private static MyMovieEntry getOneMovie(String query, JSONObject jsonObject, int index) {
         MyMovieEntry movie = null;
         try {
             // Extract the values of the keys
@@ -111,7 +111,17 @@ public class TheMovieDB {
             String poster = jsonObject.getString("poster_path");
             float rating = jsonObject.getLong("vote_average");
             // Create a new {@link MyMovieEntry} object from the JSON response.
-            movie = new MyMovieEntry(id, index + 1, Utils.makeTimeStamp(), title, date, synopsis, poster, rating, false, PopularMovies.category);
+            int popIndex = 0;
+            int topIndex = 0;
+            boolean favorite = false;
+
+
+            if (query.equals(Utils.CATEGORY_POPULAR)) {
+                popIndex = index + 1;
+            } else {
+                topIndex = index + 1;
+            }
+            movie = new MyMovieEntry(id, popIndex, topIndex, title, date, synopsis, poster, rating, favorite);
         } catch (JSONException e) {
             //  Print a log message if an error is thrown when executing any of the above statements in the "try" block,
             Log.e("GETONEMOVIE", "Problem parsing the JSON", e);
@@ -119,27 +129,27 @@ public class TheMovieDB {
         return movie;
     }
 
-    public static void getMovieList(String query, final MoviesDatabase moviesDB, Context context) {
+    public static void getMovieList(final String query, final MoviesDatabase moviesDB, Context context) {
         // set up the DownloadFinishListener
-        DownloadFinishListener downloadListener;
+        final DownloadFinishListener downloadListener;
         if (context instanceof DownloadFinishListener) {
             downloadListener = (DownloadFinishListener) context;
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnConnectionChangeListener");
         }
-        // deletes the non favorites items from the database
-        moviesDB.myMovieDAO().deleteNonFavorites();
         // Generates the url corresponding to the query and reads the JSON data
         String requestURL;
         switch (query) {
             default:
-            case "popular": {
+            case Utils.CATEGORY_POPULAR: {
                 requestURL = "https://api.themoviedb.org/3/movie/popular?api_key=null";
+                moviesDB.myMovieDAO().deletePopularMovies();
                 break;
             }
-            case "top_rated": {
+            case Utils.CATEGORY_TOP_RATED: {
                 requestURL = "https://api.themoviedb.org/3/movie/top_rated?api_key=null";
+                moviesDB.myMovieDAO().deleteTopRatedMovies();
                 break;
             }
         }
@@ -152,42 +162,49 @@ public class TheMovieDB {
             readData = "";
         }
         // If the JSON string is empty or null, then return early.
+
         if (!TextUtils.isEmpty(readData)) {
             // Try to parse the JSON response string.
             try {
                 // Create a JSONObject from the JSON response string
                 JSONObject baseJson = new JSONObject(readData);
                 // Extract the JSONObject associated with the key called "results"
-                JSONArray moviesArray = baseJson.getJSONArray("results");
+                final JSONArray moviesArray = baseJson.getJSONArray("results");
                 // For each song in the songsArray, create an {@link MyMovieEntry} object
-                for (int i = 0; i < moviesArray.length(); i++) {
-                    // Get a single movie at position i within the list of movies
-                    final MyMovieEntry movie = getOneMovie(moviesArray.getJSONObject(i), i);
-                    // Add the new {@link MyMovieEntry} to the database
-                    if (movie != null) {
-                        AppExecutors.getInstance().diskIO().execute(new Runnable() {
-                            @Override
-                            public void run() {
+                AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        for (int i = 0; i < moviesArray.length(); i++) {
+                            // Get a single movie at position i within the list of movies
+                            MyMovieEntry movie = null;
+                            try {
+                                movie = getOneMovie(query, moviesArray.getJSONObject(i), i);
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                            // Add the new {@link MyMovieEntry} to the database
+                            if (movie != null) {
                                 //Log.v("GETMOVIELIST", "Adding new movie to database : " + movie.getTitle());
                                 try {
                                     moviesDB.myMovieDAO().insertMovie(movie);
                                 } catch (Exception e) {
+                                    moviesDB.myMovieDAO().updateMovie(movie);
                                     e.getStackTrace();
                                 }
                             }
-                        });
+                        }
+                        downloadListener.onDownloadFinish(true, query);
                     }
-                }
-                downloadListener.onDownloadFinish(true,"movies");
+                });
             } catch (JSONException e) {
                 //  Print a log message if an error is thrown when executing any of the above statements in the "try" block,
-                downloadListener.onDownloadFinish(false,"movies");
+                downloadListener.onDownloadFinish(false, query);
                 Log.e("GETMOVIELIST", "Problem parsing the JSON", e);
             }
         }
     }
 
-    public static ArrayList<MovieReview> getReviews (int id, Context context, String caller) {
+    public static ArrayList<MovieReview> getReviews(int id, Context context, String caller) {
         // set up the DownloadFinishListener
         DownloadFinishListener downloadListener;
         if (context instanceof DownloadFinishListener) {
@@ -197,7 +214,7 @@ public class TheMovieDB {
                     + " must implement OnConnectionChangeListener");
         }
         ArrayList<MovieReview> reviews = new ArrayList<>();
-        String requestURL = "https://api.themoviedb.org/3/movie/"+id+"/reviews?api_key=null";
+        String requestURL = "https://api.themoviedb.org/3/movie/" + id + "/reviews?api_key=null";
         String readData;
         try {
             readData = getJson(generateUrl(requestURL));
@@ -214,18 +231,18 @@ public class TheMovieDB {
                 for (int i = 0; i < reviewsArray.length(); i++) {
                     String author = reviewsArray.getJSONObject(i).getString("author");
                     String content = reviewsArray.getJSONObject(i).getString("content");
-                    reviews.add(new MovieReview(id,author,content));
+                    reviews.add(new MovieReview(id, author, content));
                 }
             } catch (JSONException e) {
                 //  Print a log message if an error is thrown when executing any of the above statements in the "try" block,
                 Log.e("GET REVIEWS", "Problem parsing the JSON", e);
             }
         }
-        downloadListener.onDownloadFinish(true,caller);
+        downloadListener.onDownloadFinish(true, caller);
         return reviews;
     }
 
-    public static ArrayList<MovieTrailer> getTrailers (int id, Context context, String caller) {
+    public static ArrayList<MovieTrailer> getTrailers(int id, Context context, String caller) {
         // set up the DownloadFinishListener
         DownloadFinishListener downloadListener;
         if (context instanceof DownloadFinishListener) {
@@ -235,7 +252,7 @@ public class TheMovieDB {
                     + " must implement OnConnectionChangeListener");
         }
         ArrayList<MovieTrailer> trailers = new ArrayList<>();
-        String requestURL = "https://api.themoviedb.org/3/movie/"+id+"/videos?api_key=null";
+        String requestURL = "https://api.themoviedb.org/3/movie/" + id + "/videos?api_key=null";
         String readData;
         try {
             readData = getJson(generateUrl(requestURL));
@@ -252,7 +269,7 @@ public class TheMovieDB {
                 for (int i = 0; i < reviewsArray.length(); i++) {
                     String name = reviewsArray.getJSONObject(i).getString("name");
                     String key = reviewsArray.getJSONObject(i).getString("key");
-                    trailers.add(new MovieTrailer(id,name,key));
+                    trailers.add(new MovieTrailer(id, name, key));
                 }
             } catch (JSONException e) {
                 //  Print a log message if an error is thrown when executing any of the above statements in the "try" block,

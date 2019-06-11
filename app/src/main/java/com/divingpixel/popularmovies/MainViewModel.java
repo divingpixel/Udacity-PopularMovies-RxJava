@@ -23,12 +23,16 @@ public class MainViewModel extends AndroidViewModel {
         favorites = moviesDB.myMovieDAO().loadFavoriteMovies();
     }
 
-   public LiveData<List<MyMovieEntry>> getMovies(boolean showFavorites) {
-        if (showFavorites) {
+   public LiveData<List<MyMovieEntry>> getMovies() {
+        if (PopularMovies.showFavorites) {
             Log.d(LOG_TAG, "Returning FAVORITES from ViewModel");
             return favorites;
+        } else if (PopularMovies.category.equalsIgnoreCase(Utils.CATEGORY_POPULAR)){
+            movies = moviesDB.myMovieDAO().loadPopularMovies();
+            Log.d(LOG_TAG, "Returning MOVIES CATEGORY " + PopularMovies.category.toUpperCase() + " from ViewModel");
+            return movies;
         } else {
-            movies = moviesDB.myMovieDAO().loadCurrentMovies(Utils.makeTimeStamp(),PopularMovies.category);
+            movies = moviesDB.myMovieDAO().loadTopRatedMovies();
             Log.d(LOG_TAG, "Returning MOVIES CATEGORY " + PopularMovies.category.toUpperCase() + " from ViewModel");
             return movies;
         }

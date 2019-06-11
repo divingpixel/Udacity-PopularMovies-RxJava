@@ -45,7 +45,9 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MyViewHolder
         if (movie.isFavorite() && (PopularMovies.showFavorites)) {
             movieTitle = movie.getTitle();
         } else {
-            movieTitle = "#" + movie.getIndex() + " : " + movie.getTitle();
+            if (PopularMovies.category.equalsIgnoreCase(Utils.CATEGORY_POPULAR))
+                movieTitle = "#" + movie.getPopIndex() + " : " + movie.getTitle();
+            else movieTitle = "#" + movie.getTopIndex() + " : " + movie.getTitle();
             if (movie.isFavorite()) viewHolder.favorite.setVisibility(View.VISIBLE);
         }
         viewHolder.title.setText(movieTitle);
