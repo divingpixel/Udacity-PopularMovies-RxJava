@@ -31,10 +31,10 @@ public interface MyMovieDAO {
     @Delete
     void deleteMovie(MyMovieEntry movieEntry);
 
-    @Query("DELETE from movies WHERE mPopIndex>0 AND mFavorite='false'")
+    @Query("DELETE from movies WHERE mPopIndex>0 AND mTopIndex=0 AND mFavorite='false'")
     void deletePopularMovies();
 
-    @Query("DELETE from movies WHERE mTopIndex>0 AND mFavorite='false'")
+    @Query("DELETE from movies WHERE mTopIndex>0 AND mPopIndex=0 AND mFavorite='false'")
     void deleteTopRatedMovies();
 
     @Query("SELECT * from movies WHERE mId= :id")

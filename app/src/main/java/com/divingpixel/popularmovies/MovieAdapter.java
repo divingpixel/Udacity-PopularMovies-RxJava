@@ -41,15 +41,14 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MyViewHolder
     public void onBindViewHolder(@NonNull MyViewHolder viewHolder, int position) {
         MyMovieEntry movie = mMovies.get(position);
         viewHolder.favorite.setVisibility(View.GONE);
-        String movieTitle;
-        if (movie.isFavorite() && (PopularMovies.showFavorites)) {
+        int index;
+        if (PopularMovies.category.equals(Utils.CATEGORY_POPULAR)) index = movie.getPopIndex();
+            else index = movie.getTopIndex();
+        String movieTitle = "#" + index + " : " + movie.getTitle();
+        if (movie.isFavorite() && (PopularMovies.category.equals(Utils.CATEGORY_FAVORITES))) {
             movieTitle = movie.getTitle();
-        } else {
-            if (PopularMovies.category.equalsIgnoreCase(Utils.CATEGORY_POPULAR))
-                movieTitle = "#" + movie.getPopIndex() + " : " + movie.getTitle();
-            else movieTitle = "#" + movie.getTopIndex() + " : " + movie.getTitle();
-            if (movie.isFavorite()) viewHolder.favorite.setVisibility(View.VISIBLE);
         }
+        if (movie.isFavorite()) viewHolder.favorite.setVisibility(View.VISIBLE);
         viewHolder.title.setText(movieTitle);
         viewHolder.rating.setRating(movie.getRating() / 2);
         String posterUrl = TheMovieDB.POSTER_PATH + TheMovieDB.POSTER_SMALL + movie.getPosterUrl();

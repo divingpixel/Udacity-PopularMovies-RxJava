@@ -36,49 +36,44 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
     private static final int UI_COMPLETE = 1;
 
     private static final String LOG_TAG = PopularMovies.class.getSimpleName();
-    public static final String INSTANCE_SHOW_FAVORITES = "instance_show_favorites";
-    public static final String INSTANCE_START_DATE = "instance_start_date";
-    private ArrayList<MyMovieEntry> movieList;
+    public static final String INSTANCE_CATEGORY = "instance_category";
+    private ArrayList<MyMovieEntry> movieList, popularList, topRatedList, favoriteList;
     private MovieAdapter movieAdapter;
     private MainViewModel viewModel;
+
     RecyclerView recyclerView;
     TextView emptyView;
     View loadingProgress;
     private Menu actionMenu;
-    private String downLoadTimeStamp;
     private InternetCheck internetStatus;
-    private MoviesDatabase moviesDB;
-    private Context mainContext;
     public static boolean isConnected;
-    public static String category;
-    public static boolean showFavorites = false;
+    public static String category = Utils.CATEGORY_POPULAR;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.start_screen);
 
-        mainContext = this;
-        moviesDB = MoviesDatabase.getInstance(getApplicationContext());
+        Context mainContext = this;
+        MoviesDatabase moviesDB = MoviesDatabase.getInstance(getApplicationContext());
         movieAdapter = new MovieAdapter(movieList);
-        viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
+        setUpViewModel();
 
         //gets the internet connection status and downloads the movie list
         internetStatus = new InternetCheck(this.getApplication(), mainContext);
         isConnected = internetStatus.hasConnection();
 
         //gets the saved variables on rotation
-        if (savedInstanceState != null && savedInstanceState.containsKey(INSTANCE_SHOW_FAVORITES)) {
-            showFavorites = savedInstanceState.getBoolean(INSTANCE_SHOW_FAVORITES, false);
-            downLoadTimeStamp = savedInstanceState.getString(INSTANCE_START_DATE, Utils.makeTimeStamp());
+        if (savedInstanceState != null && savedInstanceState.containsKey(INSTANCE_CATEGORY)) {
+            category = savedInstanceState.getString(INSTANCE_CATEGORY, Utils.CATEGORY_POPULAR);
+            //downLoadTimeStamp = savedInstanceState.getString(INSTANCE_START_DATE, Utils.makeTimeStamp());
         }
 
         // set-up the views
-        category = Utils.CATEGORY_POPULAR;
         emptyView = findViewById(R.id.empty_view);
         loadingProgress = findViewById(R.id.loading_progress);
         recyclerView = findViewById(R.id.movie_list);
-        updateUi(UI_LOADING);
+
 
         //set up the recyclerView column count according to the orientation
         int orientation = this.getResources().getConfiguration().orientation;
@@ -103,6 +98,13 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
             public void onLongClick(View view, int position) {
             }
         }));
+
+        if (isConnected) {
+            updateUi(UI_LOADING);
+            viewModel.updateMovieDatabase(moviesDB, mainContext);
+        } else {
+            updateUi(UI_NO_INTERNET);
+        }
     }
 
     @Override
@@ -113,14 +115,12 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
     @Override
     protected void onResume() {
         super.onResume();
-        updateMovies();
-        setUpViewModel();
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        outState.putBoolean(INSTANCE_SHOW_FAVORITES, showFavorites);
-        outState.putString(INSTANCE_START_DATE, downLoadTimeStamp);
+        outState.putString(INSTANCE_CATEGORY, category);
+        //outState.putString(INSTANCE_START_DATE, downLoadTimeStamp);
         super.onSaveInstanceState(outState);
     }
 
@@ -144,27 +144,25 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_popular) {
-            this.setTitle(R.string.menu_popular);
-            showFavorites = false;
-            if (!category.equalsIgnoreCase(Utils.CATEGORY_POPULAR)) {
+            if (!category.equals(Utils.CATEGORY_POPULAR)) {
+                this.setTitle(R.string.menu_popular);
                 category = Utils.CATEGORY_POPULAR;
-                updateMovies();
             }
         }
         if (id == R.id.action_topRated) {
-            this.setTitle(R.string.menu_topRated);
-            showFavorites = false;
-            if (!category.equalsIgnoreCase(Utils.CATEGORY_TOP_RATED)) {
+            if (!category.equals(Utils.CATEGORY_TOP_RATED)) {
+                this.setTitle(R.string.menu_topRated);
                 category = Utils.CATEGORY_TOP_RATED;
-                updateMovies();
             }
         }
         if (id == R.id.action_favorites) {
-            this.setTitle(R.string.menu_favorites);
-            showFavorites = true;
+            if (!category.equals(Utils.CATEGORY_FAVORITES)) {
+                this.setTitle(R.string.menu_favorites);
+                category = Utils.CATEGORY_FAVORITES;
+            }
         }
         setUpMenuIcons();
-        setUpViewModel();
+        updateViewModel();
         return super.onOptionsItemSelected(item);
     }
 
@@ -172,43 +170,58 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
         actionMenu.findItem(R.id.action_favorites).setIcon(R.drawable.ic_favorite_menu_24dp);
         actionMenu.findItem(R.id.action_popular).setIcon(R.drawable.ic_popular_menu_24dp);
         actionMenu.findItem(R.id.action_topRated).setIcon(R.drawable.ic_star_menu_24dp);
-        if (showFavorites) {
-            actionMenu.findItem(R.id.action_favorites).setIcon(R.drawable.ic_favorite_menu_selected_24dp);
-        } else if (category.equalsIgnoreCase(Utils.CATEGORY_POPULAR))
-            actionMenu.findItem(R.id.action_popular).setIcon(R.drawable.ic_popular_menu_selected_24dp);
-        else
-            actionMenu.findItem(R.id.action_topRated).setIcon(R.drawable.ic_star_menu_selected_24dp);
-    }
-
-   private void updateMovies() {
-       // if (!Utils.makeTimeStamp().equalsIgnoreCase(downLoadTimeStamp)) {
-            if (isConnected) {
-                updateUi(UI_LOADING);
-                AppExecutors.getInstance().networkIO().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        downLoadTimeStamp = Utils.makeTimeStamp();
-                        Log.i(LOG_TAG, "DOWNLOADING MOVIE DATA FOR QUERY " + PopularMovies.category);
-                        TheMovieDB.getMovieList(category, moviesDB, mainContext);
-                    }
-                });
-            } else {
-                updateUi(UI_NO_INTERNET);
-            }
-        /*} else {
-            updateUi(UI_COMPLETE);
-        }*/
+        switch (category) {
+            case Utils.CATEGORY_FAVORITES:
+                actionMenu.findItem(R.id.action_favorites).setIcon(R.drawable.ic_favorite_menu_selected_24dp);
+                break;
+            case Utils.CATEGORY_POPULAR:
+                actionMenu.findItem(R.id.action_popular).setIcon(R.drawable.ic_popular_menu_selected_24dp);
+                break;
+            case Utils.CATEGORY_TOP_RATED:
+                actionMenu.findItem(R.id.action_topRated).setIcon(R.drawable.ic_star_menu_selected_24dp);
+                break;
+        }
     }
 
     private void setUpViewModel() {
-        viewModel.getMovies().observe(this, new Observer<List<MyMovieEntry>>() {
+        viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
+        viewModel.getFavorites().observe(this, new Observer<List<MyMovieEntry>>() {
             @Override
             public void onChanged(@Nullable List<MyMovieEntry> myMovieEntries) {
-                movieList = (ArrayList<MyMovieEntry>) myMovieEntries;
-                movieAdapter.setMovies(movieList);
-                if ((movieList.size() == 0) && showFavorites) updateUi(UI_NO_MOVIES);
+                favoriteList = (ArrayList<MyMovieEntry>) myMovieEntries;
+                updateViewModel();
             }
         });
+        viewModel.getPopular().observe(this, new Observer<List<MyMovieEntry>>() {
+            @Override
+            public void onChanged(@Nullable List<MyMovieEntry> myMovieEntries) {
+                popularList = (ArrayList<MyMovieEntry>) myMovieEntries;
+                updateViewModel();
+            }
+        });
+        viewModel.getTopRated().observe(this, new Observer<List<MyMovieEntry>>() {
+            @Override
+            public void onChanged(@Nullable List<MyMovieEntry> myMovieEntries) {
+                topRatedList = (ArrayList<MyMovieEntry>) myMovieEntries;
+                updateViewModel();
+            }
+        });
+    }
+
+    private void updateViewModel() {
+        switch (category) {
+            case Utils.CATEGORY_FAVORITES: {
+                movieList = favoriteList;
+            }
+            case Utils.CATEGORY_POPULAR: {
+                movieList = popularList;
+            }
+            case Utils.CATEGORY_TOP_RATED: {
+                movieList = topRatedList;
+            }
+        }
+        movieAdapter.setMovies(movieList);
+        if (movieAdapter.getItemCount() == 0) updateUi(UI_NO_MOVIES);
     }
 
     @Override
@@ -224,6 +237,7 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
             public void run() {
                 if (status) {
                     updateUi(UI_COMPLETE);
+                    updateViewModel();
                 } else {
                     updateUi(UI_NO_DATA);
                 }
