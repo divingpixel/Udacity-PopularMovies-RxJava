@@ -108,27 +108,31 @@ public class TheMovieDB {
         try {
             // Extract the values of the keys
             int id = jsonObject.getInt("id");
+            int popIndex = 0;
+            int topIndex = 0;
             String title = jsonObject.getString("title");
             String date = jsonObject.getString("release_date");
             String synopsis = jsonObject.getString("overview");
             String poster = jsonObject.getString("poster_path");
             float rating = jsonObject.getLong("vote_average");
-
-            int popIndex = 0;
-            int topIndex = 0;
             boolean favorite = false;
+
             MyMovieEntry dbMovie = moviesDB.myMovieDAO().getMovieById(id);
             if (dbMovie != null)
                 favorite = dbMovie.isFavorite();
+
             if (query.equals(Utils.CATEGORY_POPULAR)) {
                 popIndex = index + 1;
+                if (dbMovie != null)
+                    topIndex = dbMovie.getTopIndex();
             } else {
                 topIndex = index + 1;
+                if (dbMovie != null)
+                    popIndex = dbMovie.getPopIndex();
             }
 
             // Create a new {@link MyMovieEntry} object from the JSON response.
-            if (favorite)
-                Log.v("GET " + query.toUpperCase() + " LIST", "Found favorite movie " + title.toUpperCase());
+            // if (favorite) Log.v("GET " + query.toUpperCase() + " LIST", "Found favorite movie " + title.toUpperCase());
             movie = new MyMovieEntry(id, popIndex, topIndex, title, date, synopsis, poster, rating, favorite);
         } catch (JSONException e) {
             //  Print a log message if an error is thrown when executing any of the above statements in the "try" block,
