@@ -40,6 +40,7 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
     private ArrayList<MyMovieEntry> movieList, popularList, topRatedList, favoriteList;
     private MovieAdapter movieAdapter;
     private MainViewModel viewModel;
+    private MoviesDatabase moviesDB;
 
     RecyclerView recyclerView;
     TextView emptyView;
@@ -55,9 +56,9 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
         setContentView(R.layout.start_screen);
 
         Context mainContext = this;
-        MoviesDatabase moviesDB = MoviesDatabase.getInstance(getApplicationContext());
+        moviesDB = MoviesDatabase.getInstance(getApplicationContext());
         movieAdapter = new MovieAdapter(movieList);
-        setUpViewModel();
+        viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
 
         //gets the internet connection status and downloads the movie list
         internetStatus = new InternetCheck(this.getApplication(), mainContext);
@@ -102,6 +103,7 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
         if (isConnected) {
             updateUi(UI_LOADING);
             viewModel.updateMovieDatabase(moviesDB, mainContext);
+            setUpViewModel();
         } else {
             updateUi(UI_NO_INTERNET);
         }
@@ -136,70 +138,58 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
         MenuInflater menuInflater = getMenuInflater();
         menuInflater.inflate(R.menu.settings_menu, menu);
         actionMenu = menu;
-        setUpMenuIcons();
+        actionMenu.findItem(R.id.action_popular).setIcon(R.drawable.ic_popular_menu_selected_24dp);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
+        actionMenu.findItem(R.id.action_favorites).setIcon(R.drawable.ic_favorite_menu_24dp);
+        actionMenu.findItem(R.id.action_popular).setIcon(R.drawable.ic_popular_menu_24dp);
+        actionMenu.findItem(R.id.action_topRated).setIcon(R.drawable.ic_star_menu_24dp);
         if (id == R.id.action_popular) {
             if (!category.equals(Utils.CATEGORY_POPULAR)) {
+                actionMenu.findItem(R.id.action_popular).setIcon(R.drawable.ic_popular_menu_selected_24dp);
                 this.setTitle(R.string.menu_popular);
                 category = Utils.CATEGORY_POPULAR;
             }
         }
         if (id == R.id.action_topRated) {
             if (!category.equals(Utils.CATEGORY_TOP_RATED)) {
+                actionMenu.findItem(R.id.action_topRated).setIcon(R.drawable.ic_star_menu_selected_24dp);
                 this.setTitle(R.string.menu_topRated);
                 category = Utils.CATEGORY_TOP_RATED;
             }
         }
         if (id == R.id.action_favorites) {
             if (!category.equals(Utils.CATEGORY_FAVORITES)) {
+                actionMenu.findItem(R.id.action_favorites).setIcon(R.drawable.ic_favorite_menu_selected_24dp);
                 this.setTitle(R.string.menu_favorites);
                 category = Utils.CATEGORY_FAVORITES;
             }
         }
-        setUpMenuIcons();
         updateViewModel();
         return super.onOptionsItemSelected(item);
     }
 
-    public void setUpMenuIcons() {
-        actionMenu.findItem(R.id.action_favorites).setIcon(R.drawable.ic_favorite_menu_24dp);
-        actionMenu.findItem(R.id.action_popular).setIcon(R.drawable.ic_popular_menu_24dp);
-        actionMenu.findItem(R.id.action_topRated).setIcon(R.drawable.ic_star_menu_24dp);
-        switch (category) {
-            case Utils.CATEGORY_FAVORITES:
-                actionMenu.findItem(R.id.action_favorites).setIcon(R.drawable.ic_favorite_menu_selected_24dp);
-                break;
-            case Utils.CATEGORY_POPULAR:
-                actionMenu.findItem(R.id.action_popular).setIcon(R.drawable.ic_popular_menu_selected_24dp);
-                break;
-            case Utils.CATEGORY_TOP_RATED:
-                actionMenu.findItem(R.id.action_topRated).setIcon(R.drawable.ic_star_menu_selected_24dp);
-                break;
-        }
-    }
 
     private void setUpViewModel() {
-        viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
-        viewModel.getFavorites().observe(this, new Observer<List<MyMovieEntry>>() {
+        viewModel.getMovies(Utils.CATEGORY_FAVORITES).observe(this, new Observer<List<MyMovieEntry>>() {
             @Override
             public void onChanged(@Nullable List<MyMovieEntry> myMovieEntries) {
                 favoriteList = (ArrayList<MyMovieEntry>) myMovieEntries;
                 updateViewModel();
             }
         });
-        viewModel.getPopular().observe(this, new Observer<List<MyMovieEntry>>() {
+        viewModel.getMovies(Utils.CATEGORY_POPULAR).observe(this, new Observer<List<MyMovieEntry>>() {
             @Override
             public void onChanged(@Nullable List<MyMovieEntry> myMovieEntries) {
                 popularList = (ArrayList<MyMovieEntry>) myMovieEntries;
                 updateViewModel();
             }
         });
-        viewModel.getTopRated().observe(this, new Observer<List<MyMovieEntry>>() {
+        viewModel.getMovies(Utils.CATEGORY_TOP_RATED).observe(this, new Observer<List<MyMovieEntry>>() {
             @Override
             public void onChanged(@Nullable List<MyMovieEntry> myMovieEntries) {
                 topRatedList = (ArrayList<MyMovieEntry>) myMovieEntries;
@@ -212,16 +202,21 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
         switch (category) {
             case Utils.CATEGORY_FAVORITES: {
                 movieList = favoriteList;
+                break;
             }
             case Utils.CATEGORY_POPULAR: {
                 movieList = popularList;
+                break;
             }
             case Utils.CATEGORY_TOP_RATED: {
                 movieList = topRatedList;
+                break;
             }
         }
         movieAdapter.setMovies(movieList);
         if (movieAdapter.getItemCount() == 0) updateUi(UI_NO_MOVIES);
+        else
+            updateUi(UI_COMPLETE);
     }
 
     @Override

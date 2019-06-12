@@ -39,4 +39,7 @@ public interface MyMovieDAO {
 
     @Query("SELECT * from movies WHERE mId= :id")
     LiveData<MyMovieEntry> loadMovieById(int id);
+
+    @Query("SELECT * from movies WHERE mId= :id")
+    MyMovieEntry getMovieById(int id);
 }

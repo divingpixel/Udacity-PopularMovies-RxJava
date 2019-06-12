@@ -20,7 +20,7 @@ public class MainViewModel extends AndroidViewModel {
 
     public MainViewModel(@NonNull Application application) {
         super(application);
-        MoviesDatabase moviesDB = MoviesDatabase.getInstance(application);
+        MoviesDatabase moviesDB = MoviesDatabase.getInstance(application.getBaseContext());
         favorites = moviesDB.myMovieDAO().loadFavoriteMovies();
         popular = moviesDB.myMovieDAO().loadPopularMovies();
         topRated = moviesDB.myMovieDAO().loadTopRatedMovies();
@@ -31,19 +31,19 @@ public class MainViewModel extends AndroidViewModel {
         TheMovieDB.getMovieList(Utils.CATEGORY_POPULAR, moviesDB, context);
     }
 
-    public LiveData<List<MyMovieEntry>> getFavorites() {
-        Log.e(LOG_TAG, "RETURNING FAVORITE MOVIES");
-        return favorites;
+    public LiveData<List<MyMovieEntry>> getMovies(String category) {
+        switch (category) {
+            default:
+                Log.i(LOG_TAG, "RETURNING " + category.toUpperCase() + " MOVIES");
+            case Utils.CATEGORY_FAVORITES: {
+                return favorites;
+            }
+            case Utils.CATEGORY_POPULAR: {
+                return popular;
+            }
+            case Utils.CATEGORY_TOP_RATED: {
+                return topRated;
+            }
+        }
     }
-
-    public LiveData<List<MyMovieEntry>> getPopular() {
-        Log.e(LOG_TAG, "RETURNING POPULAR MOVIES");
-        return popular;
-    }
-
-    public LiveData<List<MyMovieEntry>> getTopRated() {
-        Log.e(LOG_TAG, "RETURNING TOP RATED MOVIES");
-        return topRated;
-    }
-
 }
