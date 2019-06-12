@@ -31,7 +31,7 @@ public class MainViewModel extends AndroidViewModel {
         TheMovieDB.getMovieList(Utils.CATEGORY_POPULAR, moviesDB, context);
     }
 
-    public LiveData<List<MyMovieEntry>> getMovies(String category) {
+    LiveData<List<MyMovieEntry>> getMovies(String category) {
         switch (category) {
             default:
                 Log.i(LOG_TAG, "RETURNING " + category.toUpperCase() + " MOVIES");

@@ -1,7 +1,5 @@
 package com.divingpixel.popularmovies.internet;
 
-import android.arch.lifecycle.LiveData;
-import android.arch.lifecycle.MutableLiveData;
 import android.content.Context;
 import android.net.Uri;
 import android.text.TextUtils;
@@ -10,7 +8,6 @@ import android.util.Log;
 import com.divingpixel.popularmovies.AppExecutors;
 import com.divingpixel.popularmovies.MovieReview;
 import com.divingpixel.popularmovies.MovieTrailer;
-import com.divingpixel.popularmovies.PopularMovies;
 import com.divingpixel.popularmovies.Utils;
 import com.divingpixel.popularmovies.database.MoviesDatabase;
 import com.divingpixel.popularmovies.database.MyMovieEntry;
@@ -28,7 +25,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.List;
 
 public class TheMovieDB {
 
