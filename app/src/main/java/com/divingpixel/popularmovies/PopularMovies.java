@@ -44,6 +44,9 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
     RecyclerView recyclerView;
     TextView emptyView;
     View loadingProgress;
+    MoviesDatabase moviesDB;
+    Context mainContext;
+
     private Menu actionMenu;
     private InternetCheck internetStatus;
     public static boolean isConnected;
@@ -54,8 +57,8 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
         super.onCreate(savedInstanceState);
         setContentView(R.layout.start_screen);
 
-        Context mainContext = this;
-        MoviesDatabase moviesDB = MoviesDatabase.getInstance(getApplicationContext());
+        mainContext = this;
+        moviesDB = MoviesDatabase.getInstance(mainContext);
         movieAdapter = new MovieAdapter(movieList);
         viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
 
@@ -96,7 +99,10 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
         if (savedInstanceState != null && savedInstanceState.containsKey(INSTANCE_CATEGORY)) {
             category = savedInstanceState.getString(INSTANCE_CATEGORY, Utils.CATEGORY_POPULAR);
         } else {
-            viewModel.updateMovieDatabase(moviesDB, mainContext);
+            if (isConnected) {
+                updateUi(UI_LOADING);
+                viewModel.updateMovieDatabase(moviesDB, mainContext);
+            }
         }
     }
 
@@ -104,7 +110,6 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
     protected void onStart() {
         super.onStart();
         if (isConnected) {
-            updateUi(UI_LOADING);
             setUpViewModel();
         } else {
             updateUi(UI_NO_INTERNET);
@@ -114,7 +119,6 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         outState.putString(INSTANCE_CATEGORY, category);
-        //outState.putString(INSTANCE_START_DATE, downLoadTimeStamp);
         super.onSaveInstanceState(outState);
     }
 
@@ -157,7 +161,7 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
             }
         }
         setUpMenuButtons();
-        updateViewModel();
+        if (isConnected) updateViewModel();
         return super.onOptionsItemSelected(item);
     }
 
@@ -224,9 +228,22 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
     }
 
     @Override
-    public void onConnectionChange(boolean status) {
-        Log.d(LOG_TAG, "CONNECTION STATUS CHANGED TO : " + status);
-        isConnected = status;
+    public void onConnectionChange(final boolean status) {
+        AppExecutors.getInstance().mainThread().execute(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(LOG_TAG, "CONNECTION STATUS CHANGED TO : " + status);
+                if (!isConnected && status) {
+                    isConnected = status;
+                    updateUi(UI_LOADING);
+                    viewModel.updateMovieDatabase(moviesDB, mainContext);
+                    setUpViewModel();
+                } else if (!status) {
+                    isConnected = status;
+                    updateUi(UI_NO_INTERNET);
+                }
+            }
+        });
     }
 
     @Override

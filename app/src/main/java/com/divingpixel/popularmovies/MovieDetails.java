@@ -154,6 +154,13 @@ public class MovieDetails extends AppCompatActivity implements TheMovieDB.Downlo
     }
 
     private void initUi() {
+
+        switch (PopularMovies.category) {
+            case Utils.CATEGORY_FAVORITES : this.setTitle(R.string.menu_favorites); break;
+            case Utils.CATEGORY_POPULAR : this.setTitle(R.string.menu_popular); break;
+            case Utils.CATEGORY_TOP_RATED : this.setTitle(R.string.menu_topRated); break;
+        }
+
         ImageView poster = findViewById(R.id.detail_poster);
         String posterUrl = TheMovieDB.POSTER_PATH + TheMovieDB.POSTER_BIG + selectedMovie.getPosterUrl();
         Picasso.get().load(posterUrl).into(poster);
