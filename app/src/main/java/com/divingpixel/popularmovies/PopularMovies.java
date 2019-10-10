@@ -1,16 +1,16 @@
 package com.divingpixel.popularmovies;
 
-import android.arch.lifecycle.Observer;
-import android.arch.lifecycle.ViewModelProviders;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProviders;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -34,6 +34,12 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
     private static final int UI_NO_DATA = -2;
     private static final int UI_NO_MOVIES = -3;
     private static final int UI_COMPLETE = 1;
+
+    public static final String TheMovieDB_BASE_URL = "https://api.themoviedb.org/";
+    public static final String API_KEY = "32a2be514060aa29a632774e0649f353";
+    public static final String POSTER_PATH = "https://image.tmdb.org/t/p/";
+    public static final String POSTER_SMALL = "w185/";
+    public static final String POSTER_BIG = "w500/";
 
     private static final String LOG_TAG = PopularMovies.class.getSimpleName();
     public static final String INSTANCE_CATEGORY = "instance_category";
@@ -234,12 +240,12 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
             public void run() {
                 Log.d(LOG_TAG, "CONNECTION STATUS CHANGED TO : " + status);
                 if (!isConnected && status) {
-                    isConnected = status;
+                    isConnected = true;
                     updateUi(UI_LOADING);
                     viewModel.updateMovieDatabase(moviesDB, mainContext);
                     setUpViewModel();
                 } else if (!status) {
-                    isConnected = status;
+                    isConnected = false;
                     updateUi(UI_NO_INTERNET);
                 }
             }

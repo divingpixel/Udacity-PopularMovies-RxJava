@@ -1,17 +1,17 @@
 package com.divingpixel.popularmovies;
 
-import android.arch.lifecycle.Observer;
-import android.arch.lifecycle.ViewModelProviders;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProviders;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
@@ -162,7 +162,7 @@ public class MovieDetails extends AppCompatActivity implements TheMovieDB.Downlo
         }
 
         ImageView poster = findViewById(R.id.detail_poster);
-        String posterUrl = TheMovieDB.POSTER_PATH + TheMovieDB.POSTER_BIG + selectedMovie.getPosterUrl();
+        String posterUrl = PopularMovies.POSTER_PATH + PopularMovies.POSTER_BIG + selectedMovie.getPosterUrl();
         Picasso.get().load(posterUrl).into(poster);
 
         TextView title = findViewById(R.id.detail_title);

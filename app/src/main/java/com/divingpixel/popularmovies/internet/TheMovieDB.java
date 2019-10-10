@@ -26,14 +26,11 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 
+import static com.divingpixel.popularmovies.PopularMovies.API_KEY;
+
 public class TheMovieDB {
 
-    public static final String POSTER_PATH = "https://image.tmdb.org/t/p/";
-    public static final String POSTER_SMALL = "w185/";
-    public static final String POSTER_BIG = "w500/";
-
     private static URL generateUrl(String requestURL) {
-        final String API_KEY = "32a2be514060aa29a632774e0649f353";
 
         // parse breaks apart the URI string that's passed into its parameter
         Uri baseUri = Uri.parse(requestURL);

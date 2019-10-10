@@ -1,7 +1,7 @@
 package com.divingpixel.popularmovies;
 
-import android.support.annotation.NonNull;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -51,7 +51,7 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MyViewHolder
         if (movie.isFavorite()) viewHolder.favorite.setVisibility(View.VISIBLE);
         viewHolder.title.setText(movieTitle);
         viewHolder.rating.setRating(movie.getRating() / 2);
-        String posterUrl = TheMovieDB.POSTER_PATH + TheMovieDB.POSTER_SMALL + movie.getPosterUrl();
+        String posterUrl = PopularMovies.POSTER_PATH + PopularMovies.POSTER_SMALL + movie.getPosterUrl();
         Picasso.get().load(posterUrl).into(viewHolder.poster);
     }
 
