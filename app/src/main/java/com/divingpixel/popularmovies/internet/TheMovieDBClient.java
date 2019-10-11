@@ -2,9 +2,6 @@ package com.divingpixel.popularmovies.internet;
 
 import androidx.annotation.NonNull;
 
-import com.divingpixel.popularmovies.MovieReview;
-import com.divingpixel.popularmovies.MovieTrailer;
-import com.divingpixel.popularmovies.PopularMovies;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -16,6 +13,8 @@ import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 
+import static com.divingpixel.popularmovies.internet.TheMovieDBService.TheMovieDB_BASE_URL;
+
 
 public class TheMovieDBClient {
 
@@ -26,7 +25,7 @@ public class TheMovieDBClient {
         final Gson gson =
                 new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
         final Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(PopularMovies.TheMovieDB_BASE_URL)
+                .baseUrl(TheMovieDB_BASE_URL)
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .build();
@@ -44,13 +43,12 @@ public class TheMovieDBClient {
         return movieService.getMovies(movieType).map(TheMovieDbPage::getResults);
     }
 
-    public Single<List<MovieTrailer>> getMovieTrailers(@NonNull int movieId) {
+    public Single<List<TheMovieDBTrailer>> getMovieTrailers(int movieId) {
         return movieService.getTrailers(movieId);
     }
 
-    public Single<List<MovieReview>> getMovieReviews(@NonNull int movieId) {
+    public Single<List<TheMovieDBReview>> getMovieReviews(int movieId) {
         return movieService.getReviews(movieId);
     }
-
-
+    
 }

@@ -8,13 +8,15 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.divingpixel.popularmovies.internet.TheMovieDBReview;
+
 import java.util.List;
 
 public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.MyViewHolder> {
 
-    private List<MovieReview> mReviews;
+    private List<TheMovieDBReview> mReviews;
 
-    ReviewAdapter (List<MovieReview> reviews){
+    ReviewAdapter (List<TheMovieDBReview> reviews){
         mReviews = reviews;
     }
 
@@ -28,7 +30,7 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.MyViewHold
 
     @Override
     public void onBindViewHolder(@NonNull ReviewAdapter.MyViewHolder myViewHolder, int position) {
-        MovieReview movieReview = mReviews.get(position);
+        TheMovieDBReview movieReview = mReviews.get(position);
         myViewHolder.text.setText(movieReview.getText());
         myViewHolder.author.setText(movieReview.getReviewer());
     }

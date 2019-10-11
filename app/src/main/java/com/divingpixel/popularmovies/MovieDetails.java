@@ -1,7 +1,6 @@
 package com.divingpixel.popularmovies;
 
 import android.content.ActivityNotFoundException;
-import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -22,6 +21,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.divingpixel.popularmovies.database.MoviesDatabase;
 import com.divingpixel.popularmovies.database.MyMovieEntry;
 import com.divingpixel.popularmovies.internet.TheMovieDBClient;
+import com.divingpixel.popularmovies.internet.TheMovieDBReview;
+import com.divingpixel.popularmovies.internet.TheMovieDBTrailer;
 import com.squareup.picasso.Picasso;
 
 import java.text.ParseException;
@@ -38,6 +39,8 @@ import io.reactivex.schedulers.Schedulers;
 import static com.divingpixel.popularmovies.PopularMovies.CATEGORY_FAVORITES;
 import static com.divingpixel.popularmovies.PopularMovies.CATEGORY_POPULAR;
 import static com.divingpixel.popularmovies.PopularMovies.CATEGORY_TOP_RATED;
+import static com.divingpixel.popularmovies.internet.TheMovieDBService.POSTER_BIG;
+import static com.divingpixel.popularmovies.internet.TheMovieDBService.POSTER_PATH;
 
 public class MovieDetails extends AppCompatActivity {
 
@@ -48,43 +51,29 @@ public class MovieDetails extends AppCompatActivity {
     public static final String INSTANCE_MOVIE_ID = "instance_movieId";
     // Default value for the item id
     private static final int DEFAULT_MOVIE_ID = -1;
-    public static final String CALLER_REVIEWS = "reviews";
-    public static final String CALLER_TRAILERS = "trailers";
 
-    private Disposable disposable;
+    private Disposable disposableMovie, disposableDetails;
     private int movieId = DEFAULT_MOVIE_ID;
     private MyMovieEntry selectedMovie;
-    private List<MovieReview> reviews = new ArrayList<>();
-    private ReviewAdapter reviewAdapter;
-    private List<MovieTrailer> trailers = new ArrayList<>();
-    private TrailerAdapter trailerAdapter;
+    private List<TheMovieDBReview> reviews = new ArrayList<>();
+    private List<TheMovieDBTrailer> trailers = new ArrayList<>();
     private MoviesDatabase mDb;
     ImageView favoriteButton;
     RecyclerView reviewsList, trailersList;
-    private Context thisContext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.movie_details);
 
-        thisContext = this;
         mDb = MoviesDatabase.getInstance(getApplicationContext());
 
         //set-up the heart button
         favoriteButton = findViewById(R.id.detail_favorite);
-        favoriteButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                selectedMovie.setFavorite(!selectedMovie.isFavorite());
-                AppExecutors.getInstance().diskIO().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        mDb.myMovieDAO().updateMovie(selectedMovie);
-                    }
-                });
-                setFavoriteButton();
-            }
+        favoriteButton.setOnClickListener(v -> {
+            selectedMovie.setFavorite(!selectedMovie.isFavorite());
+            AppExecutors.getInstance().diskIO().execute(() -> mDb.myMovieDAO().updateMovie(selectedMovie));
+            setFavoriteButton();
         });
 
         //retrieve the item id and sets up the interface
@@ -102,14 +91,15 @@ public class MovieDetails extends AppCompatActivity {
             // populate the UI
             MovieDetailsViewModelFactory factory = new MovieDetailsViewModelFactory(mDb, movieId);
             final MovieDetailsViewModel viewModel = ViewModelProviders.of(this, factory).get(MovieDetailsViewModel.class);
-            disposable = viewModel.getMovie()
+            disposableMovie = viewModel.getMovie()
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(myMovieEntry -> {
                         selectedMovie = myMovieEntry;
                         initUi();
-                        getTrailers();
-                        getReviews();
+                        //getTrailers();
+                        //getReviews();
+                        updateUi();
                     });
 
             //setUp TRAILERS recyclerView
@@ -147,6 +137,17 @@ public class MovieDetails extends AppCompatActivity {
     }
 
     @Override
+    protected void onDestroy() {
+        if (disposableMovie != null && !disposableMovie.isDisposed()) {
+            disposableMovie.dispose();
+        }
+        if (disposableDetails != null && !disposableDetails.isDisposed()) {
+            disposableDetails.dispose();
+        }
+        super.onDestroy();
+    }
+
+    @Override
     protected void onSaveInstanceState(Bundle outState) {
         Log.i(LOG_TAG, "SAVING STATE FOR THE ITEM WITH THE ID : " + movieId);
         outState.putInt(INSTANCE_MOVIE_ID, movieId);
@@ -176,7 +177,7 @@ public class MovieDetails extends AppCompatActivity {
         }
 
         ImageView poster = findViewById(R.id.detail_poster);
-        String posterUrl = PopularMovies.POSTER_PATH + PopularMovies.POSTER_BIG + selectedMovie.getPosterUrl();
+        String posterUrl = POSTER_PATH + POSTER_BIG + selectedMovie.getPosterUrl();
         Picasso.get().load(posterUrl).into(poster);
 
         TextView title = findViewById(R.id.detail_title);
@@ -208,7 +209,7 @@ public class MovieDetails extends AppCompatActivity {
 
     private void getReviews() {
         if (PopularMovies.isConnected) {
-            disposable = TheMovieDBClient.getInstance()
+            disposableDetails = TheMovieDBClient.getInstance()
                     .getMovieReviews(selectedMovie.getId())
                     .subscribeOn(Schedulers.io())
                     .observeOn(Schedulers.io())
@@ -219,7 +220,7 @@ public class MovieDetails extends AppCompatActivity {
     private void getTrailers() {
         if (PopularMovies.isConnected) {
 
-            disposable = TheMovieDBClient.getInstance()
+            disposableDetails = TheMovieDBClient.getInstance()
                     .getMovieTrailers(selectedMovie.getId())
                     .subscribeOn(Schedulers.io())
                     .observeOn(Schedulers.io())
@@ -227,31 +228,26 @@ public class MovieDetails extends AppCompatActivity {
         }
     }
 
-    public void onDownloadFinish(Boolean status, final String caller) {
-        AppExecutors.getInstance().mainThread().execute(new Runnable() {
-            @Override
-            public void run() {
-                if (trailers.size() == 0) {
-                    trailersList.setVisibility(View.GONE);
-                    findViewById(R.id.title_trailers).setVisibility(View.GONE);
-                } else if (caller.equalsIgnoreCase(CALLER_TRAILERS)) {
-                    trailerAdapter = new TrailerAdapter(trailers);
-                    trailerAdapter.notifyDataSetChanged();
-                    trailersList.setAdapter(trailerAdapter);
-                    trailersList.setVisibility(View.VISIBLE);
-                    findViewById(R.id.title_trailers).setVisibility(View.VISIBLE);
-                }
-                if (reviews.size() == 0) {
-                    reviewsList.setVisibility(View.GONE);
-                    findViewById(R.id.title_reviews).setVisibility(View.GONE);
-                } else if (caller.equalsIgnoreCase(CALLER_REVIEWS)) {
-                    reviewAdapter = new ReviewAdapter(reviews);
-                    reviewAdapter.notifyDataSetChanged();
-                    reviewsList.setAdapter(reviewAdapter);
-                    reviewsList.setVisibility(View.VISIBLE);
-                    findViewById(R.id.title_reviews).setVisibility(View.VISIBLE);
-                }
-            }
-        });
+    public void updateUi() {
+        if (trailers.size() == 0) {
+            trailersList.setVisibility(View.GONE);
+            findViewById(R.id.title_trailers).setVisibility(View.GONE);
+        } else {
+            TrailerAdapter trailerAdapter = new TrailerAdapter(trailers);
+            trailerAdapter.notifyDataSetChanged();
+            trailersList.setAdapter(trailerAdapter);
+            trailersList.setVisibility(View.VISIBLE);
+            findViewById(R.id.title_trailers).setVisibility(View.VISIBLE);
+        }
+        if (reviews.size() == 0) {
+            reviewsList.setVisibility(View.GONE);
+            findViewById(R.id.title_reviews).setVisibility(View.GONE);
+        } else {
+            ReviewAdapter reviewAdapter = new ReviewAdapter(reviews);
+            reviewAdapter.notifyDataSetChanged();
+            reviewsList.setAdapter(reviewAdapter);
+            reviewsList.setVisibility(View.VISIBLE);
+            findViewById(R.id.title_reviews).setVisibility(View.VISIBLE);
+        }
     }
 }

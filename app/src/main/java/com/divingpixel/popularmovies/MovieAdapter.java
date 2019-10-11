@@ -17,9 +17,8 @@ import java.util.List;
 
 import static com.divingpixel.popularmovies.PopularMovies.CATEGORY_FAVORITES;
 import static com.divingpixel.popularmovies.PopularMovies.CATEGORY_POPULAR;
-import static com.divingpixel.popularmovies.PopularMovies.POSTER_PATH;
-import static com.divingpixel.popularmovies.PopularMovies.POSTER_SMALL;
-
+import static com.divingpixel.popularmovies.internet.TheMovieDBService.POSTER_PATH;
+import static com.divingpixel.popularmovies.internet.TheMovieDBService.POSTER_SMALL;
 
 public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MyViewHolder> {
 

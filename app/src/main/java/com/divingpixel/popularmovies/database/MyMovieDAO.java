@@ -24,7 +24,7 @@ public interface MyMovieDAO {
     @Query("SELECT * from movies WHERE mTopIndex>0 ORDER BY mTopIndex")
     Observable<List<MyMovieEntry>> loadTopRatedMovies();
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertMovie(MyMovieEntry movieEntry);
 
     @Update(onConflict = OnConflictStrategy.REPLACE)

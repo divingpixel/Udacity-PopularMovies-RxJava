@@ -8,6 +8,8 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.net.NetworkRequest;
 
+import org.jetbrains.annotations.NotNull;
+
 public class InternetCheck extends ConnectivityManager.NetworkCallback {
 
     private final NetworkRequest networkRequest;
@@ -31,7 +33,7 @@ public class InternetCheck extends ConnectivityManager.NetworkCallback {
         enable();
     }
 
-    public void enable() {
+    private void enable() {
         connectivityManager.registerNetworkCallback(networkRequest, this);
     }
 
@@ -40,7 +42,7 @@ public class InternetCheck extends ConnectivityManager.NetworkCallback {
     }
 
     @Override
-    public void onAvailable(Network network) {
+    public void onAvailable(@NotNull Network network) {
         netListener.onConnectionChange(true);
     }
 

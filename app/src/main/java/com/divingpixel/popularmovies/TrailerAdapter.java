@@ -8,13 +8,15 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.divingpixel.popularmovies.internet.TheMovieDBTrailer;
+
 import java.util.List;
 
 public class TrailerAdapter extends RecyclerView.Adapter<TrailerAdapter.MyViewHolder> {
 
-    private List<MovieTrailer> mTrailers;
+    private List<TheMovieDBTrailer> mTrailers;
 
-    TrailerAdapter (List<MovieTrailer> trailers){
+    TrailerAdapter (List<TheMovieDBTrailer> trailers){
         mTrailers = trailers;
     }
 
@@ -28,7 +30,7 @@ public class TrailerAdapter extends RecyclerView.Adapter<TrailerAdapter.MyViewHo
 
     @Override
     public void onBindViewHolder(@NonNull TrailerAdapter.MyViewHolder myViewHolder, int position) {
-        MovieTrailer movieTrailer = mTrailers.get(position);
+        TheMovieDBTrailer movieTrailer = mTrailers.get(position);
         myViewHolder.title.setText(movieTrailer.getTitle());
     }
 

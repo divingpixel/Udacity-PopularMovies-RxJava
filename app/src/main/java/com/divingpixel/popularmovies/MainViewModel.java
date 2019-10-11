@@ -8,13 +8,12 @@ import androidx.lifecycle.AndroidViewModel;
 
 import com.divingpixel.popularmovies.database.MoviesDatabase;
 import com.divingpixel.popularmovies.database.MyMovieEntry;
-import com.divingpixel.popularmovies.internet.TheMovieDBMovie;
 import com.divingpixel.popularmovies.internet.TheMovieDBClient;
+import com.divingpixel.popularmovies.internet.TheMovieDBMovie;
 
 import java.util.List;
 
 import io.reactivex.Observable;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.DisposableSingleObserver;
 import io.reactivex.schedulers.Schedulers;
 
@@ -27,7 +26,7 @@ public class MainViewModel extends AndroidViewModel {
     private static final String LOG_TAG = MainViewModel.class.getSimpleName();
     private Observable<List<MyMovieEntry>> popular, topRated, favorites;
     private MoviesDatabase moviesDB;
-    private Disposable disposable;
+    private DisposableSingleObserver<List<TheMovieDBMovie>> disposable;
 
     public MainViewModel(@NonNull Application application) {
         super(application);
@@ -37,54 +36,83 @@ public class MainViewModel extends AndroidViewModel {
         topRated = moviesDB.myMovieDAO().loadTopRatedMovies();
     }
 
+    private void processMovieList (String category, List<TheMovieDBMovie> movieEntries) {
+        int index = 0;
+        for (TheMovieDBMovie dbMovie : movieEntries) {
+            index++;
+            int finalIndex = index;
+            moviesDB.myMovieDAO().getMovieById(dbMovie.getId())
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(Schedulers.io())
+                    .subscribe(new DisposableSingleObserver<MyMovieEntry>() {
+                        @Override
+                        public void onError(Throwable e) {
+                            int popIndex = 0, topIndex = 0;
+                            if (category.equals(PopularMovies.CATEGORY_POPULAR))
+                                popIndex = finalIndex;
+                            else
+                                topIndex = finalIndex;
+                            moviesDB.myMovieDAO().insertMovie(
+                                    new MyMovieEntry(dbMovie.getId(),
+                                            popIndex,
+                                            topIndex,
+                                            dbMovie.getTitle(),
+                                            dbMovie.getRelease_date(),
+                                            dbMovie.getOverview(),
+                                            dbMovie.getPoster_path(),
+                                            dbMovie.getVote_average(),
+                                            false)
+                            );
+                            Log.i(LOG_TAG, "MOVIE " + dbMovie.getTitle() + " IS NEW. ADDED TO DATABASE.");
+                        }
+
+                        @Override
+                        public void onSuccess(MyMovieEntry movie) {
+                            int popIndex, topIndex;
+                            if (category.equals(PopularMovies.CATEGORY_POPULAR)) {
+                                popIndex = finalIndex;
+                                topIndex = movie.getTopIndex();
+                            } else {
+                                topIndex = finalIndex;
+                                popIndex = movie.getPopIndex();
+                            }
+                            moviesDB.myMovieDAO().updateMovie(
+                                    new MyMovieEntry(movie.getId(),
+                                            popIndex,
+                                            topIndex,
+                                            movie.getTitle(),
+                                            movie.getDate(),
+                                            movie.getSynopsis(),
+                                            movie.getPosterUrl(),
+                                            movie.getRating(),
+                                            movie.isFavorite())
+                            );
+                            Log.i(LOG_TAG, "FOUND " + movie.getTitle() + " IN DATABASE. UPDATED.");
+                        }
+                    });
+        }
+    }
+
     private void fillDatabase(final String category) {
         disposable = TheMovieDBClient.getInstance()
                 .getSelectedMovies(category)
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
-                .subscribe(movieEntries -> {
-                    MyMovieEntry newMovie;
-                    if (category.equals(CATEGORY_POPULAR))
-                        moviesDB.myMovieDAO().deletePopularMovies();
-                    else moviesDB.myMovieDAO().deleteTopRatedMovies();
-                    int popIndex = 0, topIndex = 0, index = 0;
-                    boolean favorite = false;
-                    for (TheMovieDBMovie movie : movieEntries) {
-                        popIndex=topIndex=index++;
-                        final MyMovieEntry[] dbMovie = {null};
-                        moviesDB.myMovieDAO().getMovieById(movie.getId())
-                                .subscribeOn(Schedulers.io())
-                                .observeOn(Schedulers.io())
-                                .subscribe(new DisposableSingleObserver<MyMovieEntry>() {
-                                    @Override
-                                    public void onError(Throwable e) {
-                                    }
+                .subscribeWith(new DisposableSingleObserver<List<TheMovieDBMovie>>() {
+                                   @Override
+                                   public void onSuccess(List<TheMovieDBMovie> theMovieDBMovies) {
+                                       if (category.equals(CATEGORY_POPULAR))
+                                           moviesDB.myMovieDAO().deletePopularMovies();
+                                       else moviesDB.myMovieDAO().deleteTopRatedMovies();
+                                       processMovieList(category,theMovieDBMovies);
+                                   }
 
-                                    @Override
-                                    public void onSuccess(MyMovieEntry movie) {
-                                        dbMovie[0] = movie;
-                                    }
-                                });
-                        if (dbMovie[0] != null) {
-                            favorite = dbMovie[0].isFavorite();
-                            if (category.equals(PopularMovies.CATEGORY_POPULAR)) {
-                                topIndex = dbMovie[0].getTopIndex();
-                            } else {
-                                popIndex = dbMovie[0].getPopIndex();
-                            }
-                        }
+                                   @Override
+                                   public void onError(Throwable e) {
 
-                        newMovie = new MyMovieEntry(movie.getId(), popIndex, topIndex,
-                                movie.getTitle(),
-                                movie.getRelease_date(),
-                                movie.getOverview(),
-                                movie.getPoster_path(),
-                                movie.getVote_average(),
-                                favorite);
-                        //moviesDB.myMovieDAO().insertMovie(newMovie);
-                        Log.i(LOG_TAG,"Downloaded movie " + movie.getTitle());
-                    }
-                });
+                                   }
+                               });
+
     }
 
     void updateMovieDatabase() {

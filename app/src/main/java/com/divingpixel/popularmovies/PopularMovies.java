@@ -24,7 +24,7 @@ import com.divingpixel.popularmovies.internet.InternetCheck;
 import java.util.List;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.observers.DisposableObserver;
 import io.reactivex.schedulers.Schedulers;
 
 public class PopularMovies extends AppCompatActivity implements InternetCheck.ConnectionChangeListener {
@@ -35,12 +35,6 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
     private static final int UI_NO_DATA = -2;
     private static final int UI_NO_MOVIES = -3;
     private static final int UI_COMPLETE = 1;
-
-    public static final String TheMovieDB_BASE_URL = "https://api.themoviedb.org/";
-    public static final String API_KEY = "32a2be514060aa29a632774e0649f353";
-    public static final String POSTER_PATH = "https://image.tmdb.org/t/p/";
-    public static final String POSTER_SMALL = "w185/";
-    public static final String POSTER_BIG = "w500/";
 
     static final String CATEGORY_FAVORITES = "favorites";
     public static final String CATEGORY_TOP_RATED = "top_rated";
@@ -58,7 +52,7 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
     MoviesDatabase moviesDB;
     Context mainContext;
 
-    private Disposable disposable;
+    private DisposableObserver<List<MyMovieEntry>> disposable;
     private Menu actionMenu;
     private InternetCheck internetStatus;
     public static boolean isConnected;
@@ -198,32 +192,39 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
         disposable = viewModel.getMovies(category)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(myMovieList -> {
-                    movieList = myMovieList;
-                    movieAdapter.setMovies(myMovieList);
-                    movieAdapter.notifyDataSetChanged();
+                .subscribeWith(new DisposableObserver<List<MyMovieEntry>>() {
+                    @Override
+                    public void onNext(List<MyMovieEntry> movieEntries) {
+                        movieList = movieEntries;
+                        movieAdapter.setMovies(movieList);
+                        movieAdapter.notifyDataSetChanged();
+                        updateUi(UI_COMPLETE);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        updateUi(UI_NO_DATA);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        if (movieAdapter.getItemCount() == 0) updateUi(UI_NO_MOVIES);
+                    }
                 });
-        if (movieAdapter.getItemCount() == 0) updateUi(UI_NO_MOVIES);
-        else updateUi(UI_COMPLETE);
     }
 
     @Override
     public void onConnectionChange(final boolean status) {
-        AppExecutors.getInstance().mainThread().execute(new Runnable() {
-            @Override
-            public void run() {
-                Log.d(LOG_TAG, "CONNECTION STATUS CHANGED TO : " + status);
-                if (!isConnected && status) {
-                    isConnected = true;
-                    updateUi(UI_LOADING);
-                    viewModel.updateMovieDatabase();
-                    setUpMovieList();
-                } else if (!status) {
-                    isConnected = false;
-                    updateUi(UI_NO_INTERNET);
-                }
-            }
-        });
+        Log.d(LOG_TAG, "CONNECTION STATUS CHANGED TO : " + status);
+        if (!isConnected && status) {
+            isConnected = true;
+            updateUi(UI_LOADING);
+            viewModel.updateMovieDatabase();
+            setUpMovieList();
+        } else if (!status) {
+            isConnected = false;
+            updateUi(UI_NO_INTERNET);
+        }
     }
 
     private void updateUi(int state) {

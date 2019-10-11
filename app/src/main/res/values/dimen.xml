@@ -9,7 +9,7 @@
     <dimen name="thumbnail_height">150dp</dimen>
     <dimen name="poster_height">300dp</dimen>
     <dimen name="card_elevation">1dp</dimen>
-    <dimen name="card_corner_radius">3dp</dimen>
+    <dimen name="card_corner_radius">1dp</dimen>
     <dimen name="text_title">22sp</dimen>
     <dimen name="text_heading">20sp</dimen>
     <dimen name="text_subtitle">18sp</dimen>
