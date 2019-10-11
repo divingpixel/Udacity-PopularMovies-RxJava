@@ -1,17 +1,9 @@
 package com.divingpixel.popularmovies;
 
-import android.arch.lifecycle.Observer;
-import android.arch.lifecycle.ViewModelProviders;
 import android.content.ActivityNotFoundException;
-import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
@@ -20,18 +12,37 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.divingpixel.popularmovies.database.MoviesDatabase;
 import com.divingpixel.popularmovies.database.MyMovieEntry;
-import com.divingpixel.popularmovies.internet.TheMovieDB;
+import com.divingpixel.popularmovies.internet.TheMovieDBClient;
+import com.divingpixel.popularmovies.internet.TheMovieDBReview;
+import com.divingpixel.popularmovies.internet.TheMovieDBTrailer;
 import com.squareup.picasso.Picasso;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
-public class MovieDetails extends AppCompatActivity implements TheMovieDB.DownloadFinishListener {
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.observers.DisposableSingleObserver;
+import io.reactivex.schedulers.Schedulers;
+
+import static com.divingpixel.popularmovies.PopularMovies.CATEGORY_FAVORITES;
+import static com.divingpixel.popularmovies.PopularMovies.CATEGORY_POPULAR;
+import static com.divingpixel.popularmovies.PopularMovies.CATEGORY_TOP_RATED;
+import static com.divingpixel.popularmovies.internet.TheMovieDBService.POSTER_BIG;
+import static com.divingpixel.popularmovies.internet.TheMovieDBService.POSTER_PATH;
+
+public class MovieDetails extends AppCompatActivity {
 
     private static final String LOG_TAG = MovieDetails.class.getSimpleName();
     // Extra for the item ID to be received in the intent
@@ -40,42 +51,29 @@ public class MovieDetails extends AppCompatActivity implements TheMovieDB.Downlo
     public static final String INSTANCE_MOVIE_ID = "instance_movieId";
     // Default value for the item id
     private static final int DEFAULT_MOVIE_ID = -1;
-    public static final String CALLER_REVIEWS = "reviews";
-    public static final String CALLER_TRAILERS = "trailers";
 
+    private DisposableSingleObserver disposableMovie, disposableDetails;
     private int movieId = DEFAULT_MOVIE_ID;
     private MyMovieEntry selectedMovie;
-    private ArrayList<MovieReview> reviews = new ArrayList<>();
-    private ReviewAdapter reviewAdapter;
-    private ArrayList<MovieTrailer> trailers = new ArrayList<>();
-    private TrailerAdapter trailerAdapter;
+    private List<TheMovieDBReview> reviews = new ArrayList<>();
+    private List<TheMovieDBTrailer> trailers = new ArrayList<>();
     private MoviesDatabase mDb;
     ImageView favoriteButton;
     RecyclerView reviewsList, trailersList;
-    private Context thisContext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.movie_details);
 
-        thisContext = this;
         mDb = MoviesDatabase.getInstance(getApplicationContext());
 
         //set-up the heart button
         favoriteButton = findViewById(R.id.detail_favorite);
-        favoriteButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                selectedMovie.setFavorite(!selectedMovie.isFavorite());
-                AppExecutors.getInstance().diskIO().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        mDb.myMovieDAO().updateMovie(selectedMovie);
-                    }
-                });
-                setFavoriteButton();
-            }
+        favoriteButton.setOnClickListener(v -> {
+            selectedMovie.setFavorite(!selectedMovie.isFavorite());
+            AppExecutors.getInstance().diskIO().execute(() -> mDb.myMovieDAO().updateMovie(selectedMovie));
+            setFavoriteButton();
         });
 
         //retrieve the item id and sets up the interface
@@ -93,14 +91,22 @@ public class MovieDetails extends AppCompatActivity implements TheMovieDB.Downlo
             // populate the UI
             MovieDetailsViewModelFactory factory = new MovieDetailsViewModelFactory(mDb, movieId);
             final MovieDetailsViewModel viewModel = ViewModelProviders.of(this, factory).get(MovieDetailsViewModel.class);
-            viewModel.getMovie().observe(this, new Observer<MyMovieEntry>() {
-                @Override
-                public void onChanged(@Nullable MyMovieEntry movie) {
-                    viewModel.getMovie().removeObserver(this);
-                    selectedMovie = movie;
-                    initUi();
-                }
-            });
+            disposableMovie = viewModel.getMovie()
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeWith(new DisposableSingleObserver<MyMovieEntry>() {
+                        @Override
+                        public void onSuccess(MyMovieEntry myMovieEntry) {
+                            selectedMovie = myMovieEntry;
+                            initUi();
+                            getTrailers();
+                            getReviews();
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                        }
+                    });
 
             //setUp TRAILERS recyclerView
             trailersList = findViewById(R.id.detail_trailers_rv);
@@ -124,18 +130,27 @@ public class MovieDetails extends AppCompatActivity implements TheMovieDB.Downlo
                 public void onLongClick(View view, int position) {
                 }
             }));
-            getTrailers();
 
             //setUp REVIEWS recyclerView
             reviewsList = findViewById(R.id.detail_reviews_rv);
             reviewsList.setLayoutManager(new LinearLayoutManager(getBaseContext()));
             reviewsList.setItemAnimator(new DefaultItemAnimator());
-            getReviews();
 
         } else {
             finish();
             Toast.makeText(this, "Invalid movie entry", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (disposableMovie != null && !disposableMovie.isDisposed()) {
+            disposableMovie.dispose();
+        }
+        if (disposableDetails != null && !disposableDetails.isDisposed()) {
+            disposableDetails.dispose();
+        }
+        super.onDestroy();
     }
 
     @Override
@@ -154,15 +169,20 @@ public class MovieDetails extends AppCompatActivity implements TheMovieDB.Downlo
     }
 
     private void initUi() {
-
         switch (PopularMovies.category) {
-            case Utils.CATEGORY_FAVORITES : this.setTitle(R.string.menu_favorites); break;
-            case Utils.CATEGORY_POPULAR : this.setTitle(R.string.menu_popular); break;
-            case Utils.CATEGORY_TOP_RATED : this.setTitle(R.string.menu_topRated); break;
+            case CATEGORY_FAVORITES:
+                this.setTitle(R.string.menu_favorites);
+                break;
+            case CATEGORY_POPULAR:
+                this.setTitle(R.string.menu_popular);
+                break;
+            case CATEGORY_TOP_RATED:
+                this.setTitle(R.string.menu_topRated);
+                break;
         }
 
         ImageView poster = findViewById(R.id.detail_poster);
-        String posterUrl = TheMovieDB.POSTER_PATH + TheMovieDB.POSTER_BIG + selectedMovie.getPosterUrl();
+        String posterUrl = POSTER_PATH + POSTER_BIG + selectedMovie.getPosterUrl();
         Picasso.get().load(posterUrl).into(poster);
 
         TextView title = findViewById(R.id.detail_title);
@@ -194,54 +214,67 @@ public class MovieDetails extends AppCompatActivity implements TheMovieDB.Downlo
 
     private void getReviews() {
         if (PopularMovies.isConnected) {
-            AppExecutors.getInstance().networkIO().execute(new Runnable() {
-                @Override
-                public void run() {
-                    Log.i(LOG_TAG, "DOWNLOADING Reviews DATA FOR MOVIE ID " + movieId);
-                    reviews = TheMovieDB.getReviews(movieId, thisContext, CALLER_REVIEWS);
-                }
-            });
+            disposableDetails = TheMovieDBClient.getInstance()
+                    .getMovieReviews(selectedMovie.getId())
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeWith(new DisposableSingleObserver<List<TheMovieDBReview>>() {
+                        @Override
+                        public void onSuccess(List<TheMovieDBReview> theMovieDBReviews) {
+                            Log.i (LOG_TAG,"REVIEWS FOUND : " + theMovieDBReviews.size());
+                            reviews = theMovieDBReviews;
+                            updateUi();
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            Log.e(LOG_TAG,"ERROR GETTING THE REVIEWS ",e);
+                        }
+                    });
         }
     }
 
     private void getTrailers() {
         if (PopularMovies.isConnected) {
-            AppExecutors.getInstance().networkIO().execute(new Runnable() {
-                @Override
-                public void run() {
-                    Log.i(LOG_TAG, "DOWNLOADING Trailers DATA FOR MOVIE ID " + movieId);
-                    trailers = TheMovieDB.getTrailers(movieId, thisContext, CALLER_TRAILERS);
-                }
-            });
+            disposableDetails = TheMovieDBClient.getInstance()
+                    .getMovieTrailers(selectedMovie.getId())
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeWith(new DisposableSingleObserver<List<TheMovieDBTrailer>>() {
+                        @Override
+                        public void onSuccess(List<TheMovieDBTrailer> theMovieDBTrailers) {
+                            Log.i (LOG_TAG,"TRAILERS FOUND : " + theMovieDBTrailers.size());
+                            trailers = theMovieDBTrailers;
+                            updateUi();
+                        }
+                        @Override
+                        public void onError(Throwable e) {
+                            Log.e(LOG_TAG,"ERROR GETTING THE TRAILERS ",e);
+                        }
+                    });
         }
     }
 
-    @Override
-    public void onDownloadFinish(Boolean status, final String caller) {
-        AppExecutors.getInstance().mainThread().execute(new Runnable() {
-            @Override
-            public void run() {
-                if (trailers.size() == 0) {
-                    trailersList.setVisibility(View.GONE);
-                    findViewById(R.id.title_trailers).setVisibility(View.GONE);
-                } else if (caller.equalsIgnoreCase(CALLER_TRAILERS)) {
-                    trailerAdapter = new TrailerAdapter(trailers);
-                    trailerAdapter.notifyDataSetChanged();
-                    trailersList.setAdapter(trailerAdapter);
-                    trailersList.setVisibility(View.VISIBLE);
-                    findViewById(R.id.title_trailers).setVisibility(View.VISIBLE);
-                }
-                if (reviews.size() == 0) {
-                    reviewsList.setVisibility(View.GONE);
-                    findViewById(R.id.title_reviews).setVisibility(View.GONE);
-                } else if (caller.equalsIgnoreCase(CALLER_REVIEWS)) {
-                    reviewAdapter = new ReviewAdapter(reviews);
-                    reviewAdapter.notifyDataSetChanged();
-                    reviewsList.setAdapter(reviewAdapter);
-                    reviewsList.setVisibility(View.VISIBLE);
-                    findViewById(R.id.title_reviews).setVisibility(View.VISIBLE);
-                }
-            }
-        });
+    public void updateUi() {
+        if (trailers.size() == 0) {
+            trailersList.setVisibility(View.GONE);
+            findViewById(R.id.title_trailers).setVisibility(View.GONE);
+        } else {
+            TrailerAdapter trailerAdapter = new TrailerAdapter(trailers);
+            trailerAdapter.notifyDataSetChanged();
+            trailersList.setAdapter(trailerAdapter);
+            trailersList.setVisibility(View.VISIBLE);
+            findViewById(R.id.title_trailers).setVisibility(View.VISIBLE);
+        }
+        if (reviews.size() == 0) {
+            reviewsList.setVisibility(View.GONE);
+            findViewById(R.id.title_reviews).setVisibility(View.GONE);
+        } else {
+            ReviewAdapter reviewAdapter = new ReviewAdapter(reviews);
+            reviewAdapter.notifyDataSetChanged();
+            reviewsList.setAdapter(reviewAdapter);
+            reviewsList.setVisibility(View.VISIBLE);
+            findViewById(R.id.title_reviews).setVisibility(View.VISIBLE);
+        }
     }
 }

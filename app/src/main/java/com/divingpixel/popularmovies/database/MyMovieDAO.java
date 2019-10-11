@@ -1,28 +1,30 @@
 package com.divingpixel.popularmovies.database;
 
-import android.arch.lifecycle.LiveData;
-import android.arch.persistence.room.Dao;
-import android.arch.persistence.room.Delete;
-import android.arch.persistence.room.Insert;
-import android.arch.persistence.room.OnConflictStrategy;
-import android.arch.persistence.room.Query;
-import android.arch.persistence.room.Update;
+import androidx.room.Dao;
+import androidx.room.Delete;
+import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
+import androidx.room.Query;
+import androidx.room.Update;
 
 import java.util.List;
+
+import io.reactivex.Observable;
+import io.reactivex.Single;
 
 @Dao
 public interface MyMovieDAO {
 
     @Query("SELECT * from movies WHERE mFavorite='true' ORDER BY mDate")
-    LiveData<List<MyMovieEntry>> loadFavoriteMovies();
+    Observable<List<MyMovieEntry>> loadFavoriteMovies();
 
     @Query("SELECT * from movies WHERE mPopIndex>0 ORDER BY mPopIndex")
-    LiveData<List<MyMovieEntry>> loadPopularMovies ();
+    Observable<List<MyMovieEntry>> loadPopularMovies();
 
     @Query("SELECT * from movies WHERE mTopIndex>0 ORDER BY mTopIndex")
-    LiveData<List<MyMovieEntry>> loadTopRatedMovies();
+    Observable<List<MyMovieEntry>> loadTopRatedMovies();
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertMovie(MyMovieEntry movieEntry);
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
@@ -38,8 +40,5 @@ public interface MyMovieDAO {
     void deleteTopRatedMovies();
 
     @Query("SELECT * from movies WHERE mId= :id")
-    LiveData<MyMovieEntry> loadMovieById(int id);
-
-    @Query("SELECT * from movies WHERE mId= :id")
-    MyMovieEntry getMovieById(int id);
+    Single<MyMovieEntry> getMovieById(int id);
 }

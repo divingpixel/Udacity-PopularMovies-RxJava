@@ -1,19 +1,22 @@
 package com.divingpixel.popularmovies;
 
-import android.support.annotation.NonNull;
-import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import java.util.ArrayList;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.divingpixel.popularmovies.internet.TheMovieDBTrailer;
+
+import java.util.List;
 
 public class TrailerAdapter extends RecyclerView.Adapter<TrailerAdapter.MyViewHolder> {
 
-    private ArrayList<MovieTrailer> mTrailers;
+    private List<TheMovieDBTrailer> mTrailers;
 
-    TrailerAdapter (ArrayList<MovieTrailer> trailers){
+    TrailerAdapter (List<TheMovieDBTrailer> trailers){
         mTrailers = trailers;
     }
 
@@ -27,7 +30,7 @@ public class TrailerAdapter extends RecyclerView.Adapter<TrailerAdapter.MyViewHo
 
     @Override
     public void onBindViewHolder(@NonNull TrailerAdapter.MyViewHolder myViewHolder, int position) {
-        MovieTrailer movieTrailer = mTrailers.get(position);
+        TheMovieDBTrailer movieTrailer = mTrailers.get(position);
         myViewHolder.title.setText(movieTrailer.getTitle());
     }
 

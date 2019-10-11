@@ -1,6 +1,6 @@
 package com.divingpixel.popularmovies.database;
 
-import android.arch.persistence.room.TypeConverter;
+import androidx.room.TypeConverter;
 
 public class BooleanConverter {
     @TypeConverter

@@ -1,19 +1,22 @@
 package com.divingpixel.popularmovies;
 
-import android.support.annotation.NonNull;
-import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import java.util.ArrayList;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.divingpixel.popularmovies.internet.TheMovieDBReview;
+
+import java.util.List;
 
 public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.MyViewHolder> {
 
-    private ArrayList<MovieReview> mReviews;
+    private List<TheMovieDBReview> mReviews;
 
-    ReviewAdapter (ArrayList<MovieReview> reviews){
+    ReviewAdapter (List<TheMovieDBReview> reviews){
         mReviews = reviews;
     }
 
@@ -27,7 +30,7 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.MyViewHold
 
     @Override
     public void onBindViewHolder(@NonNull ReviewAdapter.MyViewHolder myViewHolder, int position) {
-        MovieReview movieReview = mReviews.get(position);
+        TheMovieDBReview movieReview = mReviews.get(position);
         myViewHolder.text.setText(movieReview.getText());
         myViewHolder.author.setText(movieReview.getReviewer());
     }

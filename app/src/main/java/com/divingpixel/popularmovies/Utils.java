@@ -1,14 +1,8 @@
 package com.divingpixel.popularmovies;
 
-import android.arch.persistence.room.Update;
-
 import java.util.Calendar;
 
 public class Utils {
-
-    public static final String CATEGORY_FAVORITES = "favorites";
-    public static final String CATEGORY_TOP_RATED = "top_rated";
-    public static final String CATEGORY_POPULAR = "popular";
 
     public static String addZeroes(String input, int length) {
         if (input != null) {
@@ -20,7 +14,7 @@ public class Utils {
         } else return "0";
     }
 
-    public static String addZeroes(int input, int length) {
+    private static String addZeroes(int input, int length) {
         StringBuilder result = new StringBuilder().append(input);
         while (result.length() < length) {
             result.insert(0, "0");

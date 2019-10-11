@@ -1,16 +1,9 @@
 package com.divingpixel.popularmovies;
 
-import android.arch.lifecycle.Observer;
-import android.arch.lifecycle.ViewModelProviders;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -18,15 +11,23 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.divingpixel.popularmovies.database.MoviesDatabase;
 import com.divingpixel.popularmovies.database.MyMovieEntry;
 import com.divingpixel.popularmovies.internet.InternetCheck;
-import com.divingpixel.popularmovies.internet.TheMovieDB;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class PopularMovies extends AppCompatActivity implements InternetCheck.ConnectionChangeListener, TheMovieDB.DownloadFinishListener {
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.observers.DisposableObserver;
+import io.reactivex.schedulers.Schedulers;
+
+public class PopularMovies extends AppCompatActivity implements InternetCheck.ConnectionChangeListener {
 
     //UI states constants
     private static final int UI_LOADING = 0;
@@ -35,9 +36,13 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
     private static final int UI_NO_MOVIES = -3;
     private static final int UI_COMPLETE = 1;
 
+    static final String CATEGORY_FAVORITES = "favorites";
+    public static final String CATEGORY_TOP_RATED = "top_rated";
+    public static final String CATEGORY_POPULAR = "popular";
+
     private static final String LOG_TAG = PopularMovies.class.getSimpleName();
     public static final String INSTANCE_CATEGORY = "instance_category";
-    private ArrayList<MyMovieEntry> movieList, popularList, topRatedList, favoriteList;
+    private List<MyMovieEntry> movieList;
     private MovieAdapter movieAdapter;
     private MainViewModel viewModel;
 
@@ -47,10 +52,11 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
     MoviesDatabase moviesDB;
     Context mainContext;
 
+    private DisposableObserver<List<MyMovieEntry>> disposable;
     private Menu actionMenu;
     private InternetCheck internetStatus;
     public static boolean isConnected;
-    public static String category = Utils.CATEGORY_POPULAR;
+    public static String category = CATEGORY_POPULAR;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,12 +103,9 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
 
         //gets the saved variables on rotation
         if (savedInstanceState != null && savedInstanceState.containsKey(INSTANCE_CATEGORY)) {
-            category = savedInstanceState.getString(INSTANCE_CATEGORY, Utils.CATEGORY_POPULAR);
+            category = savedInstanceState.getString(INSTANCE_CATEGORY, CATEGORY_POPULAR);
         } else {
-            if (isConnected) {
-                updateUi(UI_LOADING);
-                viewModel.updateMovieDatabase(moviesDB, mainContext);
-            }
+            viewModel.updateMovieDatabase();
         }
     }
 
@@ -110,7 +113,7 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
     protected void onStart() {
         super.onStart();
         if (isConnected) {
-            setUpViewModel();
+            setUpMovieList();
         } else {
             updateUi(UI_NO_INTERNET);
         }
@@ -124,8 +127,11 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         internetStatus.disable();
+        if (disposable != null && !disposable.isDisposed()) {
+            disposable.dispose();
+        }
+        super.onDestroy();
     }
 
 
@@ -142,26 +148,25 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_popular) {
-            if (!category.equals(Utils.CATEGORY_POPULAR)) {
+            if (!category.equals(CATEGORY_POPULAR)) {
                 this.setTitle(R.string.menu_popular);
-                category = Utils.CATEGORY_POPULAR;
+                category = CATEGORY_POPULAR;
             }
         }
         if (id == R.id.action_topRated) {
-            if (!category.equals(Utils.CATEGORY_TOP_RATED)) {
+            if (!category.equals(CATEGORY_TOP_RATED)) {
                 this.setTitle(R.string.menu_topRated);
-                category = Utils.CATEGORY_TOP_RATED;
+                category = CATEGORY_TOP_RATED;
             }
         }
         if (id == R.id.action_favorites) {
-            if (!category.equals(Utils.CATEGORY_FAVORITES)) {
-
+            if (!category.equals(CATEGORY_FAVORITES)) {
                 this.setTitle(R.string.menu_favorites);
-                category = Utils.CATEGORY_FAVORITES;
+                category = CATEGORY_FAVORITES;
             }
         }
         setUpMenuButtons();
-        if (isConnected) updateViewModel();
+        setUpMovieList();
         return super.onOptionsItemSelected(item);
     }
 
@@ -170,95 +175,56 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
         actionMenu.findItem(R.id.action_popular).setIcon(R.drawable.ic_popular_menu_24dp);
         actionMenu.findItem(R.id.action_topRated).setIcon(R.drawable.ic_star_menu_24dp);
         switch (category) {
-            case Utils.CATEGORY_FAVORITES:
+            case CATEGORY_FAVORITES:
                 actionMenu.findItem(R.id.action_favorites).setIcon(R.drawable.ic_favorite_menu_selected_24dp);
                 break;
-            case Utils.CATEGORY_POPULAR:
+            case CATEGORY_POPULAR:
                 actionMenu.findItem(R.id.action_popular).setIcon(R.drawable.ic_popular_menu_selected_24dp);
                 break;
-            case Utils.CATEGORY_TOP_RATED:
+            case CATEGORY_TOP_RATED:
                 actionMenu.findItem(R.id.action_topRated).setIcon(R.drawable.ic_star_menu_selected_24dp);
                 break;
         }
     }
 
-    private void setUpViewModel() {
-        viewModel.getMovies(Utils.CATEGORY_FAVORITES).observe(this, new Observer<List<MyMovieEntry>>() {
-            @Override
-            public void onChanged(@Nullable List<MyMovieEntry> myMovieEntries) {
-                favoriteList = (ArrayList<MyMovieEntry>) myMovieEntries;
-                updateViewModel();
-            }
-        });
-        viewModel.getMovies(Utils.CATEGORY_POPULAR).observe(this, new Observer<List<MyMovieEntry>>() {
-            @Override
-            public void onChanged(@Nullable List<MyMovieEntry> myMovieEntries) {
-                popularList = (ArrayList<MyMovieEntry>) myMovieEntries;
-                updateViewModel();
-            }
-        });
-        viewModel.getMovies(Utils.CATEGORY_TOP_RATED).observe(this, new Observer<List<MyMovieEntry>>() {
-            @Override
-            public void onChanged(@Nullable List<MyMovieEntry> myMovieEntries) {
-                topRatedList = (ArrayList<MyMovieEntry>) myMovieEntries;
-                updateViewModel();
-            }
-        });
-    }
+    private void setUpMovieList() {
+        updateUi(UI_LOADING);
+        disposable = viewModel.getMovies(category)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableObserver<List<MyMovieEntry>>() {
+                    @Override
+                    public void onNext(List<MyMovieEntry> movieEntries) {
+                        movieList = movieEntries;
+                        movieAdapter.setMovies(movieList);
+                        movieAdapter.notifyDataSetChanged();
+                        updateUi(UI_COMPLETE);
+                    }
 
-    private void updateViewModel() {
-        switch (category) {
-            case Utils.CATEGORY_FAVORITES: {
-                movieList = favoriteList;
-                break;
-            }
-            case Utils.CATEGORY_POPULAR: {
-                movieList = popularList;
-                break;
-            }
-            case Utils.CATEGORY_TOP_RATED: {
-                movieList = topRatedList;
-                break;
-            }
-        }
-        movieAdapter.setMovies(movieList);
-        if (movieAdapter.getItemCount() == 0) updateUi(UI_NO_MOVIES);
-        else
-            updateUi(UI_COMPLETE);
+                    @Override
+                    public void onError(Throwable e) {
+                        updateUi(UI_NO_DATA);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        if (movieAdapter.getItemCount() == 0) updateUi(UI_NO_MOVIES);
+                    }
+                });
     }
 
     @Override
     public void onConnectionChange(final boolean status) {
-        AppExecutors.getInstance().mainThread().execute(new Runnable() {
-            @Override
-            public void run() {
-                Log.d(LOG_TAG, "CONNECTION STATUS CHANGED TO : " + status);
-                if (!isConnected && status) {
-                    isConnected = status;
-                    updateUi(UI_LOADING);
-                    viewModel.updateMovieDatabase(moviesDB, mainContext);
-                    setUpViewModel();
-                } else if (!status) {
-                    isConnected = status;
-                    updateUi(UI_NO_INTERNET);
-                }
-            }
-        });
-    }
-
-    @Override
-    public void onDownloadFinish(final Boolean status, String caller) {
-        AppExecutors.getInstance().mainThread().execute(new Runnable() {
-            @Override
-            public void run() {
-                if (status) {
-                    updateUi(UI_COMPLETE);
-                    updateViewModel();
-                } else {
-                    updateUi(UI_NO_DATA);
-                }
-            }
-        });
+        Log.d(LOG_TAG, "CONNECTION STATUS CHANGED TO : " + status);
+        if (!isConnected && status) {
+            isConnected = true;
+            updateUi(UI_LOADING);
+            viewModel.updateMovieDatabase();
+            setUpMovieList();
+        } else if (!status) {
+            isConnected = false;
+            updateUi(UI_NO_INTERNET);
+        }
     }
 
     private void updateUi(int state) {
