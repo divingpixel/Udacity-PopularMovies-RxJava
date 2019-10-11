@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Locale;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.observers.DisposableSingleObserver;
 import io.reactivex.schedulers.Schedulers;
 
 import static com.divingpixel.popularmovies.PopularMovies.CATEGORY_FAVORITES;
@@ -52,7 +52,7 @@ public class MovieDetails extends AppCompatActivity {
     // Default value for the item id
     private static final int DEFAULT_MOVIE_ID = -1;
 
-    private Disposable disposableMovie, disposableDetails;
+    private DisposableSingleObserver disposableMovie, disposableDetails;
     private int movieId = DEFAULT_MOVIE_ID;
     private MyMovieEntry selectedMovie;
     private List<TheMovieDBReview> reviews = new ArrayList<>();
@@ -94,12 +94,18 @@ public class MovieDetails extends AppCompatActivity {
             disposableMovie = viewModel.getMovie()
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(myMovieEntry -> {
-                        selectedMovie = myMovieEntry;
-                        initUi();
-                        //getTrailers();
-                        //getReviews();
-                        updateUi();
+                    .subscribeWith(new DisposableSingleObserver<MyMovieEntry>() {
+                        @Override
+                        public void onSuccess(MyMovieEntry myMovieEntry) {
+                            selectedMovie = myMovieEntry;
+                            initUi();
+                            getTrailers();
+                            getReviews();
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                        }
                     });
 
             //setUp TRAILERS recyclerView
@@ -163,7 +169,6 @@ public class MovieDetails extends AppCompatActivity {
     }
 
     private void initUi() {
-
         switch (PopularMovies.category) {
             case CATEGORY_FAVORITES:
                 this.setTitle(R.string.menu_favorites);
@@ -212,19 +217,41 @@ public class MovieDetails extends AppCompatActivity {
             disposableDetails = TheMovieDBClient.getInstance()
                     .getMovieReviews(selectedMovie.getId())
                     .subscribeOn(Schedulers.io())
-                    .observeOn(Schedulers.io())
-                    .subscribe(result -> reviews = result);
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeWith(new DisposableSingleObserver<List<TheMovieDBReview>>() {
+                        @Override
+                        public void onSuccess(List<TheMovieDBReview> theMovieDBReviews) {
+                            Log.i (LOG_TAG,"REVIEWS FOUND : " + theMovieDBReviews.size());
+                            reviews = theMovieDBReviews;
+                            updateUi();
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            Log.e(LOG_TAG,"ERROR GETTING THE REVIEWS ",e);
+                        }
+                    });
         }
     }
 
     private void getTrailers() {
         if (PopularMovies.isConnected) {
-
             disposableDetails = TheMovieDBClient.getInstance()
                     .getMovieTrailers(selectedMovie.getId())
                     .subscribeOn(Schedulers.io())
-                    .observeOn(Schedulers.io())
-                    .subscribe(result -> trailers = result);
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeWith(new DisposableSingleObserver<List<TheMovieDBTrailer>>() {
+                        @Override
+                        public void onSuccess(List<TheMovieDBTrailer> theMovieDBTrailers) {
+                            Log.i (LOG_TAG,"TRAILERS FOUND : " + theMovieDBTrailers.size());
+                            trailers = theMovieDBTrailers;
+                            updateUi();
+                        }
+                        @Override
+                        public void onError(Throwable e) {
+                            Log.e(LOG_TAG,"ERROR GETTING THE TRAILERS ",e);
+                        }
+                    });
         }
     }
 

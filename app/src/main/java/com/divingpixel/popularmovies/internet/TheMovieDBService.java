@@ -1,7 +1,5 @@
 package com.divingpixel.popularmovies.internet;
 
-import java.util.List;
-
 import io.reactivex.Single;
 import retrofit2.http.GET;
 import retrofit2.http.Path;
@@ -18,10 +16,10 @@ public interface TheMovieDBService {
     Single<TheMovieDbPage> getMovies(@Path("type") String movieType);
 
     @GET("3/movie/{id}/videos?api_key="+ API_KEY)
-    Single<List<TheMovieDBTrailer>> getTrailers(@Path("id") int movieId);
+    Single<TheMovieDBTrailers> getTrailers(@Path("id") int movieId);
 
     @GET("3/movie/{id}/reviews?api_key="+ API_KEY)
-    Single<List<TheMovieDBReview>> getReviews(@Path("id") int movieId);
+    Single<TheMovieDBReviews> getReviews(@Path("id") int movieId);
 
 }
 

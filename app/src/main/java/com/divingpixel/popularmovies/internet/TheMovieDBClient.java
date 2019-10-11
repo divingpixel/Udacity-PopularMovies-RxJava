@@ -44,11 +44,11 @@ public class TheMovieDBClient {
     }
 
     public Single<List<TheMovieDBTrailer>> getMovieTrailers(int movieId) {
-        return movieService.getTrailers(movieId);
+        return movieService.getTrailers(movieId).map(TheMovieDBTrailers::getResults);
     }
 
     public Single<List<TheMovieDBReview>> getMovieReviews(int movieId) {
-        return movieService.getReviews(movieId);
+        return movieService.getReviews(movieId).map(TheMovieDBReviews::getResults);
     }
-    
+
 }
