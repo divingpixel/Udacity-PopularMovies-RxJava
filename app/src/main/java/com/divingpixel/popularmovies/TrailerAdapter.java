@@ -1,19 +1,20 @@
 package com.divingpixel.popularmovies;
 
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import java.util.ArrayList;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.List;
 
 public class TrailerAdapter extends RecyclerView.Adapter<TrailerAdapter.MyViewHolder> {
 
-    private ArrayList<MovieTrailer> mTrailers;
+    private List<MovieTrailer> mTrailers;
 
-    TrailerAdapter (ArrayList<MovieTrailer> trailers){
+    TrailerAdapter (List<MovieTrailer> trailers){
         mTrailers = trailers;
     }
 

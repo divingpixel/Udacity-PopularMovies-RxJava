@@ -1,17 +1,10 @@
 package com.divingpixel.popularmovies;
 
-import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProviders;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
@@ -20,18 +13,33 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.divingpixel.popularmovies.database.MoviesDatabase;
 import com.divingpixel.popularmovies.database.MyMovieEntry;
-import com.divingpixel.popularmovies.internet.TheMovieDB;
+import com.divingpixel.popularmovies.internet.TheMovieDBClient;
 import com.squareup.picasso.Picasso;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
-public class MovieDetails extends AppCompatActivity implements TheMovieDB.DownloadFinishListener {
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+
+import static com.divingpixel.popularmovies.PopularMovies.CATEGORY_FAVORITES;
+import static com.divingpixel.popularmovies.PopularMovies.CATEGORY_POPULAR;
+import static com.divingpixel.popularmovies.PopularMovies.CATEGORY_TOP_RATED;
+
+public class MovieDetails extends AppCompatActivity {
 
     private static final String LOG_TAG = MovieDetails.class.getSimpleName();
     // Extra for the item ID to be received in the intent
@@ -43,11 +51,12 @@ public class MovieDetails extends AppCompatActivity implements TheMovieDB.Downlo
     public static final String CALLER_REVIEWS = "reviews";
     public static final String CALLER_TRAILERS = "trailers";
 
+    private Disposable disposable;
     private int movieId = DEFAULT_MOVIE_ID;
     private MyMovieEntry selectedMovie;
-    private ArrayList<MovieReview> reviews = new ArrayList<>();
+    private List<MovieReview> reviews = new ArrayList<>();
     private ReviewAdapter reviewAdapter;
-    private ArrayList<MovieTrailer> trailers = new ArrayList<>();
+    private List<MovieTrailer> trailers = new ArrayList<>();
     private TrailerAdapter trailerAdapter;
     private MoviesDatabase mDb;
     ImageView favoriteButton;
@@ -93,14 +102,15 @@ public class MovieDetails extends AppCompatActivity implements TheMovieDB.Downlo
             // populate the UI
             MovieDetailsViewModelFactory factory = new MovieDetailsViewModelFactory(mDb, movieId);
             final MovieDetailsViewModel viewModel = ViewModelProviders.of(this, factory).get(MovieDetailsViewModel.class);
-            viewModel.getMovie().observe(this, new Observer<MyMovieEntry>() {
-                @Override
-                public void onChanged(@Nullable MyMovieEntry movie) {
-                    viewModel.getMovie().removeObserver(this);
-                    selectedMovie = movie;
-                    initUi();
-                }
-            });
+            disposable = viewModel.getMovie()
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(myMovieEntry -> {
+                        selectedMovie = myMovieEntry;
+                        initUi();
+                        getTrailers();
+                        getReviews();
+                    });
 
             //setUp TRAILERS recyclerView
             trailersList = findViewById(R.id.detail_trailers_rv);
@@ -124,13 +134,11 @@ public class MovieDetails extends AppCompatActivity implements TheMovieDB.Downlo
                 public void onLongClick(View view, int position) {
                 }
             }));
-            getTrailers();
 
             //setUp REVIEWS recyclerView
             reviewsList = findViewById(R.id.detail_reviews_rv);
             reviewsList.setLayoutManager(new LinearLayoutManager(getBaseContext()));
             reviewsList.setItemAnimator(new DefaultItemAnimator());
-            getReviews();
 
         } else {
             finish();
@@ -156,9 +164,15 @@ public class MovieDetails extends AppCompatActivity implements TheMovieDB.Downlo
     private void initUi() {
 
         switch (PopularMovies.category) {
-            case Utils.CATEGORY_FAVORITES : this.setTitle(R.string.menu_favorites); break;
-            case Utils.CATEGORY_POPULAR : this.setTitle(R.string.menu_popular); break;
-            case Utils.CATEGORY_TOP_RATED : this.setTitle(R.string.menu_topRated); break;
+            case CATEGORY_FAVORITES:
+                this.setTitle(R.string.menu_favorites);
+                break;
+            case CATEGORY_POPULAR:
+                this.setTitle(R.string.menu_popular);
+                break;
+            case CATEGORY_TOP_RATED:
+                this.setTitle(R.string.menu_topRated);
+                break;
         }
 
         ImageView poster = findViewById(R.id.detail_poster);
@@ -194,29 +208,25 @@ public class MovieDetails extends AppCompatActivity implements TheMovieDB.Downlo
 
     private void getReviews() {
         if (PopularMovies.isConnected) {
-            AppExecutors.getInstance().networkIO().execute(new Runnable() {
-                @Override
-                public void run() {
-                    Log.i(LOG_TAG, "DOWNLOADING Reviews DATA FOR MOVIE ID " + movieId);
-                    reviews = TheMovieDB.getReviews(movieId, thisContext, CALLER_REVIEWS);
-                }
-            });
+            disposable = TheMovieDBClient.getInstance()
+                    .getMovieReviews(selectedMovie.getId())
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(Schedulers.io())
+                    .subscribe(result -> reviews = result);
         }
     }
 
     private void getTrailers() {
         if (PopularMovies.isConnected) {
-            AppExecutors.getInstance().networkIO().execute(new Runnable() {
-                @Override
-                public void run() {
-                    Log.i(LOG_TAG, "DOWNLOADING Trailers DATA FOR MOVIE ID " + movieId);
-                    trailers = TheMovieDB.getTrailers(movieId, thisContext, CALLER_TRAILERS);
-                }
-            });
+
+            disposable = TheMovieDBClient.getInstance()
+                    .getMovieTrailers(selectedMovie.getId())
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(Schedulers.io())
+                    .subscribe(result -> trailers = result);
         }
     }
 
-    @Override
     public void onDownloadFinish(Boolean status, final String caller) {
         AppExecutors.getInstance().mainThread().execute(new Runnable() {
             @Override

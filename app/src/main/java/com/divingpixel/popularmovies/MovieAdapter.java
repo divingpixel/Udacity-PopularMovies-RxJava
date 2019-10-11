@@ -1,7 +1,5 @@
 package com.divingpixel.popularmovies;
 
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,22 +7,29 @@ import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.divingpixel.popularmovies.database.MyMovieEntry;
-import com.divingpixel.popularmovies.internet.TheMovieDB;
 import com.squareup.picasso.Picasso;
 
-import java.util.ArrayList;
+import java.util.List;
+
+import static com.divingpixel.popularmovies.PopularMovies.CATEGORY_FAVORITES;
+import static com.divingpixel.popularmovies.PopularMovies.CATEGORY_POPULAR;
+import static com.divingpixel.popularmovies.PopularMovies.POSTER_PATH;
+import static com.divingpixel.popularmovies.PopularMovies.POSTER_SMALL;
 
 
 public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MyViewHolder> {
 
-    private ArrayList<MyMovieEntry> mMovies;
+    private List<MyMovieEntry> mMovies;
 
-    MovieAdapter(ArrayList<MyMovieEntry> movies) {
+    MovieAdapter(List<MyMovieEntry> movies) {
         setMovies(movies);
     }
 
-    void setMovies(ArrayList<MyMovieEntry> movies) {
+    void setMovies(List<MyMovieEntry> movies) {
         mMovies = movies;
         notifyDataSetChanged();
     }
@@ -42,16 +47,19 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MyViewHolder
         MyMovieEntry movie = mMovies.get(position);
         viewHolder.favorite.setVisibility(View.GONE);
         int index;
-        if (PopularMovies.category.equals(Utils.CATEGORY_POPULAR)) index = movie.getPopIndex();
-            else index = movie.getTopIndex();
+        if (PopularMovies.category.equals(CATEGORY_POPULAR)) index = movie.getPopIndex();
+        else index = movie.getTopIndex();
         String movieTitle = "#" + index + " : " + movie.getTitle();
-        if (movie.isFavorite() && (PopularMovies.category.equals(Utils.CATEGORY_FAVORITES))) {
-            movieTitle = movie.getTitle();
-        }
         if (movie.isFavorite()) viewHolder.favorite.setVisibility(View.VISIBLE);
+
+        if (movie.isFavorite() && (PopularMovies.category.equals(CATEGORY_FAVORITES))) {
+            movieTitle = movie.getTitle();
+            viewHolder.favorite.setVisibility(View.GONE);
+        }
+
         viewHolder.title.setText(movieTitle);
         viewHolder.rating.setRating(movie.getRating() / 2);
-        String posterUrl = PopularMovies.POSTER_PATH + PopularMovies.POSTER_SMALL + movie.getPosterUrl();
+        String posterUrl = POSTER_PATH + POSTER_SMALL + movie.getPosterUrl();
         Picasso.get().load(posterUrl).into(viewHolder.poster);
     }
 

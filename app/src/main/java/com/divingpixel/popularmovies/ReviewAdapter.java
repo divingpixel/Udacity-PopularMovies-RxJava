@@ -1,19 +1,20 @@
 package com.divingpixel.popularmovies;
 
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import java.util.ArrayList;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.List;
 
 public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.MyViewHolder> {
 
-    private ArrayList<MovieReview> mReviews;
+    private List<MovieReview> mReviews;
 
-    ReviewAdapter (ArrayList<MovieReview> reviews){
+    ReviewAdapter (List<MovieReview> reviews){
         mReviews = reviews;
     }
 

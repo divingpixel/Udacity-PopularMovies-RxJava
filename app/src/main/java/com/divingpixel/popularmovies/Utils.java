@@ -4,10 +4,6 @@ import java.util.Calendar;
 
 public class Utils {
 
-    static final String CATEGORY_FAVORITES = "favorites";
-    public static final String CATEGORY_TOP_RATED = "top_rated";
-    public static final String CATEGORY_POPULAR = "popular";
-
     public static String addZeroes(String input, int length) {
         if (input != null) {
             StringBuilder result = new StringBuilder().append(input);

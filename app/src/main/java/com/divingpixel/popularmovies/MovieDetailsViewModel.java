@@ -1,20 +1,21 @@
 package com.divingpixel.popularmovies;
 
-import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.divingpixel.popularmovies.database.MoviesDatabase;
 import com.divingpixel.popularmovies.database.MyMovieEntry;
 
+import io.reactivex.Single;
+
 class MovieDetailsViewModel extends ViewModel {
 
-    private LiveData<MyMovieEntry> movie;
+    private Single<MyMovieEntry> movie;
 
     MovieDetailsViewModel(MoviesDatabase database, int movieId) {
-        movie = database.myMovieDAO().loadMovieById(movieId);
+        movie = database.myMovieDAO().getMovieById(movieId);
     }
 
-    LiveData<MyMovieEntry> getMovie() {
+    Single<MyMovieEntry> getMovie() {
         return movie;
     }
 }
