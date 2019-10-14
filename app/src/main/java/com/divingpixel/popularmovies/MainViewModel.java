@@ -14,6 +14,8 @@ import com.divingpixel.popularmovies.internet.TheMovieDBMovie;
 import java.util.List;
 
 import io.reactivex.Observable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.observers.DisposableCompletableObserver;
 import io.reactivex.observers.DisposableSingleObserver;
 import io.reactivex.schedulers.Schedulers;
 
@@ -27,6 +29,7 @@ public class MainViewModel extends AndroidViewModel {
     private Observable<List<MyMovieEntry>> popular, topRated, favorites;
     private MoviesDatabase moviesDB;
     private DisposableSingleObserver<List<TheMovieDBMovie>> disposable;
+    private Disposable dbDisposable;
 
     public MainViewModel(@NonNull Application application) {
         super(application);
@@ -36,7 +39,7 @@ public class MainViewModel extends AndroidViewModel {
         topRated = moviesDB.myMovieDAO().loadTopRatedMovies();
     }
 
-    private void processMovieList (String category, List<TheMovieDBMovie> movieEntries) {
+    private void processMovieList(String category, List<TheMovieDBMovie> movieEntries) {
         int index = 0;
         for (TheMovieDBMovie dbMovie : movieEntries) {
             index++;
@@ -52,7 +55,8 @@ public class MainViewModel extends AndroidViewModel {
                                 popIndex = finalIndex;
                             else
                                 topIndex = finalIndex;
-                            moviesDB.myMovieDAO().insertMovie(
+
+                            MyMovieEntry selectedMovie =
                                     new MyMovieEntry(dbMovie.getId(),
                                             popIndex,
                                             topIndex,
@@ -61,8 +65,21 @@ public class MainViewModel extends AndroidViewModel {
                                             dbMovie.getOverview(),
                                             dbMovie.getPoster_path(),
                                             dbMovie.getVote_average(),
-                                            false)
-                            );
+                                            false);
+
+                            dbDisposable = moviesDB.myMovieDAO().insertMovie(selectedMovie)
+                                    .subscribeOn(Schedulers.io())
+                                    .observeOn(Schedulers.io())
+                                    .subscribeWith(new DisposableCompletableObserver() {
+                                        @Override
+                                        public void onComplete() {
+                                        }
+
+                                        @Override
+                                        public void onError(Throwable e) {
+                                            Log.e(LOG_TAG, "ERROR UPDATING DATABASE ITEM", e);
+                                        }
+                                    });
                             Log.i(LOG_TAG, "MOVIE " + dbMovie.getTitle() + " IS NEW. ADDED TO DATABASE.");
                         }
 
@@ -76,17 +93,30 @@ public class MainViewModel extends AndroidViewModel {
                                 topIndex = finalIndex;
                                 popIndex = movie.getPopIndex();
                             }
-                            moviesDB.myMovieDAO().updateMovie(
-                                    new MyMovieEntry(movie.getId(),
-                                            popIndex,
-                                            topIndex,
-                                            movie.getTitle(),
-                                            movie.getDate(),
-                                            movie.getSynopsis(),
-                                            movie.getPosterUrl(),
-                                            movie.getRating(),
-                                            movie.isFavorite())
-                            );
+                            MyMovieEntry selectedMovie = new MyMovieEntry(
+                                    movie.getId(),
+                                    popIndex,
+                                    topIndex,
+                                    movie.getTitle(),
+                                    movie.getDate(),
+                                    movie.getSynopsis(),
+                                    movie.getPosterUrl(),
+                                    movie.getRating(),
+                                    movie.isFavorite());
+
+                            dbDisposable = moviesDB.myMovieDAO().updateMovie(selectedMovie)
+                                    .subscribeOn(Schedulers.io())
+                                    .observeOn(Schedulers.io())
+                                    .subscribeWith(new DisposableCompletableObserver() {
+                                        @Override
+                                        public void onComplete() {
+                                        }
+
+                                        @Override
+                                        public void onError(Throwable e) {
+                                            Log.e(LOG_TAG, "ERROR UPDATING DATABASE ITEM", e);
+                                        }
+                                    });
                             Log.i(LOG_TAG, "FOUND " + movie.getTitle() + " IN DATABASE. UPDATED.");
                         }
                     });
@@ -99,19 +129,19 @@ public class MainViewModel extends AndroidViewModel {
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
                 .subscribeWith(new DisposableSingleObserver<List<TheMovieDBMovie>>() {
-                                   @Override
-                                   public void onSuccess(List<TheMovieDBMovie> theMovieDBMovies) {
-                                       if (category.equals(CATEGORY_POPULAR))
-                                           moviesDB.myMovieDAO().deletePopularMovies();
-                                       else moviesDB.myMovieDAO().deleteTopRatedMovies();
-                                       processMovieList(category,theMovieDBMovies);
-                                   }
+                    @Override
+                    public void onSuccess(List<TheMovieDBMovie> theMovieDBMovies) {
+                        if (category.equals(CATEGORY_POPULAR))
+                            moviesDB.myMovieDAO().deletePopularMovies();
+                        else moviesDB.myMovieDAO().deleteTopRatedMovies();
+                        processMovieList(category, theMovieDBMovies);
+                    }
 
-                                   @Override
-                                   public void onError(Throwable e) {
+                    @Override
+                    public void onError(Throwable e) {
 
-                                   }
-                               });
+                    }
+                });
 
     }
 
@@ -140,6 +170,9 @@ public class MainViewModel extends AndroidViewModel {
     protected void onCleared() {
         if (disposable != null && !disposable.isDisposed()) {
             disposable.dispose();
+        }
+        if (dbDisposable != null && !dbDisposable.isDisposed()) {
+            dbDisposable.dispose();
         }
         super.onCleared();
     }

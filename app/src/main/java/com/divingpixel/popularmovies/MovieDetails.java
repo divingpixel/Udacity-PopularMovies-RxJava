@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.Locale;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.observers.DisposableCompletableObserver;
 import io.reactivex.observers.DisposableSingleObserver;
 import io.reactivex.schedulers.Schedulers;
 
@@ -53,6 +55,7 @@ public class MovieDetails extends AppCompatActivity {
     private static final int DEFAULT_MOVIE_ID = -1;
 
     private DisposableSingleObserver disposableMovie, disposableDetails;
+    private Disposable dbDisposable;
     private int movieId = DEFAULT_MOVIE_ID;
     private MyMovieEntry selectedMovie;
     private List<TheMovieDBReview> reviews = new ArrayList<>();
@@ -72,7 +75,19 @@ public class MovieDetails extends AppCompatActivity {
         favoriteButton = findViewById(R.id.detail_favorite);
         favoriteButton.setOnClickListener(v -> {
             selectedMovie.setFavorite(!selectedMovie.isFavorite());
-            AppExecutors.getInstance().diskIO().execute(() -> mDb.myMovieDAO().updateMovie(selectedMovie));
+            dbDisposable = mDb.myMovieDAO().updateMovie(selectedMovie)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(Schedulers.io())
+                    .subscribeWith(new DisposableCompletableObserver() {
+                        @Override
+                        public void onComplete() {
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            Log.e(LOG_TAG, "ERROR UPDATING DATABASE ITEM", e);
+                        }
+                    });
             setFavoriteButton();
         });
 
@@ -150,6 +165,9 @@ public class MovieDetails extends AppCompatActivity {
         if (disposableDetails != null && !disposableDetails.isDisposed()) {
             disposableDetails.dispose();
         }
+        if (dbDisposable != null && !dbDisposable.isDisposed()) {
+            dbDisposable.dispose();
+        }
         super.onDestroy();
     }
 
@@ -221,14 +239,14 @@ public class MovieDetails extends AppCompatActivity {
                     .subscribeWith(new DisposableSingleObserver<List<TheMovieDBReview>>() {
                         @Override
                         public void onSuccess(List<TheMovieDBReview> theMovieDBReviews) {
-                            Log.i (LOG_TAG,"REVIEWS FOUND : " + theMovieDBReviews.size());
+                            Log.i(LOG_TAG, "REVIEWS FOUND : " + theMovieDBReviews.size());
                             reviews = theMovieDBReviews;
                             updateUi();
                         }
 
                         @Override
                         public void onError(Throwable e) {
-                            Log.e(LOG_TAG,"ERROR GETTING THE REVIEWS ",e);
+                            Log.e(LOG_TAG, "ERROR GETTING THE REVIEWS ", e);
                         }
                     });
         }
@@ -243,13 +261,14 @@ public class MovieDetails extends AppCompatActivity {
                     .subscribeWith(new DisposableSingleObserver<List<TheMovieDBTrailer>>() {
                         @Override
                         public void onSuccess(List<TheMovieDBTrailer> theMovieDBTrailers) {
-                            Log.i (LOG_TAG,"TRAILERS FOUND : " + theMovieDBTrailers.size());
+                            Log.i(LOG_TAG, "TRAILERS FOUND : " + theMovieDBTrailers.size());
                             trailers = theMovieDBTrailers;
                             updateUi();
                         }
+
                         @Override
                         public void onError(Throwable e) {
-                            Log.e(LOG_TAG,"ERROR GETTING THE TRAILERS ",e);
+                            Log.e(LOG_TAG, "ERROR GETTING THE TRAILERS ", e);
                         }
                     });
         }

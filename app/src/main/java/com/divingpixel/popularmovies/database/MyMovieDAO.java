@@ -9,6 +9,7 @@ import androidx.room.Update;
 
 import java.util.List;
 
+import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 
@@ -25,13 +26,13 @@ public interface MyMovieDAO {
     Observable<List<MyMovieEntry>> loadTopRatedMovies();
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    void insertMovie(MyMovieEntry movieEntry);
+    Completable insertMovie(MyMovieEntry movieEntry);
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    void updateMovie(MyMovieEntry movieEntry);
+    Completable updateMovie(MyMovieEntry movieEntry);
 
     @Delete
-    void deleteMovie(MyMovieEntry movieEntry);
+    Completable deleteMovie(MyMovieEntry movieEntry);
 
     @Query("DELETE from movies WHERE mPopIndex>0 AND mTopIndex=0 AND mFavorite='false'")
     void deletePopularMovies();
