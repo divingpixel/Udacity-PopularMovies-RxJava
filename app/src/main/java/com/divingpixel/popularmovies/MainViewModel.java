@@ -7,9 +7,9 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 
 import com.divingpixel.popularmovies.database.MoviesDatabase;
-import com.divingpixel.popularmovies.database.MyMovieEntry;
+import com.divingpixel.popularmovies.datamodel.MyMovieEntry;
 import com.divingpixel.popularmovies.internet.TheMovieDBClient;
-import com.divingpixel.popularmovies.internet.TheMovieDBMovie;
+import com.divingpixel.popularmovies.datamodel.TheMovieDBMovie;
 
 import java.util.List;
 

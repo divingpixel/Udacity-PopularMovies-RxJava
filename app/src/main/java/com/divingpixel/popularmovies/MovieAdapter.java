@@ -10,7 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.divingpixel.popularmovies.database.MyMovieEntry;
+import com.divingpixel.popularmovies.datamodel.MyMovieEntry;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;

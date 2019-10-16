@@ -1,14 +1,14 @@
-package com.divingpixel.popularmovies.internet;
+package com.divingpixel.popularmovies.datamodel;
 
 import java.util.List;
 
-class TheMovieDbPage {
+public class TheMovieDbPage {
         int page;
         int total_results;
         int total_pages;
         private List<TheMovieDBMovie> results;
 
-    List<TheMovieDBMovie> getResults() {
+    public List<TheMovieDBMovie> getResults() {
         return results;
     }
 

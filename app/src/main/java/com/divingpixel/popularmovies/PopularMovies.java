@@ -18,7 +18,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.divingpixel.popularmovies.database.MoviesDatabase;
-import com.divingpixel.popularmovies.database.MyMovieEntry;
+import com.divingpixel.popularmovies.datamodel.MyMovieEntry;
 import com.divingpixel.popularmovies.internet.InternetCheck;
 
 import java.util.List;

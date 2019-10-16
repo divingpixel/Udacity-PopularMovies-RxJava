@@ -3,7 +3,7 @@ package com.divingpixel.popularmovies;
 import androidx.lifecycle.ViewModel;
 
 import com.divingpixel.popularmovies.database.MoviesDatabase;
-import com.divingpixel.popularmovies.database.MyMovieEntry;
+import com.divingpixel.popularmovies.datamodel.MyMovieEntry;
 
 import io.reactivex.Single;
 

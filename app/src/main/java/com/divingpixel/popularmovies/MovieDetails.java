@@ -19,10 +19,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.divingpixel.popularmovies.database.MoviesDatabase;
-import com.divingpixel.popularmovies.database.MyMovieEntry;
+import com.divingpixel.popularmovies.datamodel.MyMovieEntry;
 import com.divingpixel.popularmovies.internet.TheMovieDBClient;
-import com.divingpixel.popularmovies.internet.TheMovieDBReview;
-import com.divingpixel.popularmovies.internet.TheMovieDBTrailer;
+import com.divingpixel.popularmovies.datamodel.TheMovieDBReview;
+import com.divingpixel.popularmovies.datamodel.TheMovieDBTrailer;
 import com.squareup.picasso.Picasso;
 
 import java.text.ParseException;

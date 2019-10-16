@@ -1,5 +1,9 @@
 package com.divingpixel.popularmovies.internet;
 
+import com.divingpixel.popularmovies.datamodel.TheMovieDBReviews;
+import com.divingpixel.popularmovies.datamodel.TheMovieDBTrailers;
+import com.divingpixel.popularmovies.datamodel.TheMovieDbPage;
+
 import io.reactivex.Single;
 import retrofit2.http.GET;
 import retrofit2.http.Path;

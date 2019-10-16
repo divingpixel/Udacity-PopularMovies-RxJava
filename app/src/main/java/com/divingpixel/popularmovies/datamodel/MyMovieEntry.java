@@ -1,7 +1,6 @@
-package com.divingpixel.popularmovies.database;
+package com.divingpixel.popularmovies.datamodel;
 
 import androidx.room.Entity;
-import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 

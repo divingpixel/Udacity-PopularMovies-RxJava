@@ -2,6 +2,12 @@ package com.divingpixel.popularmovies.internet;
 
 import androidx.annotation.NonNull;
 
+import com.divingpixel.popularmovies.datamodel.TheMovieDBMovie;
+import com.divingpixel.popularmovies.datamodel.TheMovieDBReview;
+import com.divingpixel.popularmovies.datamodel.TheMovieDBReviews;
+import com.divingpixel.popularmovies.datamodel.TheMovieDBTrailer;
+import com.divingpixel.popularmovies.datamodel.TheMovieDBTrailers;
+import com.divingpixel.popularmovies.datamodel.TheMovieDbPage;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

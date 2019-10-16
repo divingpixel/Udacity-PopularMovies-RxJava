@@ -7,6 +7,8 @@ import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.Update;
 
+import com.divingpixel.popularmovies.datamodel.MyMovieEntry;
+
 import java.util.List;
 
 import io.reactivex.Completable;

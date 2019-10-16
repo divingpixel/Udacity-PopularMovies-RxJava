@@ -1,4 +1,4 @@
-package com.divingpixel.popularmovies.internet;
+package com.divingpixel.popularmovies.datamodel;
 
 public class TheMovieDBTrailer {
 

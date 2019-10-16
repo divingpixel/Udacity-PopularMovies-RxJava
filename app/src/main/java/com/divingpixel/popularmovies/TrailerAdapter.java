@@ -8,7 +8,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.divingpixel.popularmovies.internet.TheMovieDBTrailer;
+import com.divingpixel.popularmovies.datamodel.TheMovieDBTrailer;
 
 import java.util.List;
 
