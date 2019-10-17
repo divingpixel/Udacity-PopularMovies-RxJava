@@ -1,6 +1,5 @@
 package com.divingpixel.popularmovies;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
@@ -34,31 +33,32 @@ public class PopularMovies extends AppCompatActivity {
     private static final int UI_NO_MOVIES = -3;
     private static final int UI_COMPLETE = 1;
 
+    //movie categories
     static final String CATEGORY_FAVORITES = "favorites";
-    public static final String CATEGORY_TOP_RATED = "top_rated";
-    public static final String CATEGORY_POPULAR = "popular";
+    static final String CATEGORY_TOP_RATED = "top_rated";
+    static final String CATEGORY_POPULAR = "popular";
 
-    private static final String LOG_TAG = PopularMovies.class.getSimpleName();
-    public static final String INSTANCE_CATEGORY = "instance_category";
+    //data models
     private List<MyMovieEntry> movieList;
     private MovieAdapter movieAdapter;
     private MainViewModel viewModel;
-
-    RecyclerView recyclerView;
-    TextView emptyView;
-    View loadingProgress;
-    Context mainContext;
-
     private DisposableObserver<List<MyMovieEntry>> disposable;
+
+    //UI elements
+    private RecyclerView recyclerView;
+    private TextView emptyView;
+    private View loadingProgress;
     private Menu actionMenu;
+
     public static String category = CATEGORY_POPULAR;
+    private static final String LOG_TAG = PopularMovies.class.getSimpleName();
+    public static final String INSTANCE_CATEGORY = "instance_category";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.start_screen);
 
-        mainContext = this;
         movieAdapter = new MovieAdapter(movieList);
         viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
 
@@ -103,7 +103,7 @@ public class PopularMovies extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        if (ConnectionStatus.isConnected(mainContext)) {
+        if (ConnectionStatus.isConnected(getApplicationContext())) {
             setUpMovieList();
         } else {
             updateUi(UI_NO_INTERNET);
@@ -179,28 +179,34 @@ public class PopularMovies extends AppCompatActivity {
 
     private void setUpMovieList() {
         updateUi(UI_LOADING);
-        disposable = viewModel.getMovies(category)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeWith(new DisposableObserver<List<MyMovieEntry>>() {
-                    @Override
-                    public void onNext(List<MyMovieEntry> movieEntries) {
-                        movieList = movieEntries;
-                        movieAdapter.setMovies(movieList);
-                        movieAdapter.notifyDataSetChanged();
-                        updateUi(UI_COMPLETE);
-                    }
+        if (ConnectionStatus.isConnected(getApplicationContext())) {
+            disposable = viewModel.getMovies(category)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeWith(new DisposableObserver<List<MyMovieEntry>>() {
+                        @Override
+                        public void onNext(List<MyMovieEntry> movieEntries) {
+                            movieList = movieEntries;
+                            movieAdapter.setMovies(movieList);
+                            movieAdapter.notifyDataSetChanged();
+                            if (movieAdapter.getItemCount() == 0)
+                                updateUi(UI_NO_MOVIES);
+                            else
+                                updateUi(UI_COMPLETE);
+                        }
 
-                    @Override
-                    public void onError(Throwable e) {
-                        updateUi(UI_NO_DATA);
-                    }
+                        @Override
+                        public void onError(Throwable e) {
+                            updateUi(UI_NO_DATA);
+                        }
 
-                    @Override
-                    public void onComplete() {
-                        if (movieAdapter.getItemCount() == 0) updateUi(UI_NO_MOVIES);
-                    }
-                });
+                        @Override
+                        public void onComplete() {
+                        }
+                    });
+        } else {
+            updateUi(UI_NO_INTERNET);
+        }
     }
 
     private void updateUi(int state) {
