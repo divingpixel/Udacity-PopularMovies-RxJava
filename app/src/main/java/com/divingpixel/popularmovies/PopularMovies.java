@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -19,7 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.divingpixel.popularmovies.database.MoviesDatabase;
 import com.divingpixel.popularmovies.datamodel.MyMovieEntry;
-import com.divingpixel.popularmovies.internet.InternetCheck;
+import com.divingpixel.popularmovies.internet.ConnectionStatus;
 
 import java.util.List;
 
@@ -27,7 +26,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.observers.DisposableObserver;
 import io.reactivex.schedulers.Schedulers;
 
-public class PopularMovies extends AppCompatActivity implements InternetCheck.ConnectionChangeListener {
+public class PopularMovies extends AppCompatActivity {
 
     //UI states constants
     private static final int UI_LOADING = 0;
@@ -54,8 +53,6 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
 
     private DisposableObserver<List<MyMovieEntry>> disposable;
     private Menu actionMenu;
-    private InternetCheck internetStatus;
-    public static boolean isConnected;
     public static String category = CATEGORY_POPULAR;
 
     @Override
@@ -72,10 +69,6 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
         emptyView = findViewById(R.id.empty_view);
         loadingProgress = findViewById(R.id.loading_progress);
         recyclerView = findViewById(R.id.movie_list);
-
-        //gets the internet connection status and downloads the movie list
-        internetStatus = new InternetCheck(this.getApplication(), mainContext);
-        isConnected = internetStatus.hasConnection();
 
         //set up the recyclerView column count according to the orientation
         int orientation = this.getResources().getConfiguration().orientation;
@@ -105,14 +98,14 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
         if (savedInstanceState != null && savedInstanceState.containsKey(INSTANCE_CATEGORY)) {
             category = savedInstanceState.getString(INSTANCE_CATEGORY, CATEGORY_POPULAR);
         } else {
-            viewModel.updateMovieDatabase();
+            viewModel.fillDatabase(category);
         }
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        if (isConnected) {
+        if (ConnectionStatus.isConnected(mainContext)) {
             setUpMovieList();
         } else {
             updateUi(UI_NO_INTERNET);
@@ -127,7 +120,6 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
 
     @Override
     protected void onDestroy() {
-        internetStatus.disable();
         if (disposable != null && !disposable.isDisposed()) {
             disposable.dispose();
         }
@@ -211,20 +203,6 @@ public class PopularMovies extends AppCompatActivity implements InternetCheck.Co
                         if (movieAdapter.getItemCount() == 0) updateUi(UI_NO_MOVIES);
                     }
                 });
-    }
-
-    @Override
-    public void onConnectionChange(final boolean status) {
-        Log.d(LOG_TAG, "CONNECTION STATUS CHANGED TO : " + status);
-        if (!isConnected && status) {
-            isConnected = true;
-            updateUi(UI_LOADING);
-            viewModel.updateMovieDatabase();
-            setUpMovieList();
-        } else if (!status) {
-            isConnected = false;
-            updateUi(UI_NO_INTERNET);
-        }
     }
 
     private void updateUi(int state) {

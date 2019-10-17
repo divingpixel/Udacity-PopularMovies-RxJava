@@ -123,7 +123,7 @@ public class MainViewModel extends AndroidViewModel {
         }
     }
 
-    private void fillDatabase(final String category) {
+    void fillDatabase(final String category) {
         disposable = TheMovieDBClient.getInstance()
                 .getSelectedMovies(category)
                 .subscribeOn(Schedulers.io())
@@ -143,11 +143,6 @@ public class MainViewModel extends AndroidViewModel {
                     }
                 });
 
-    }
-
-    void updateMovieDatabase() {
-        fillDatabase(CATEGORY_POPULAR);
-        fillDatabase(CATEGORY_TOP_RATED);
     }
 
     Observable<List<MyMovieEntry>> getMovies(String category) {

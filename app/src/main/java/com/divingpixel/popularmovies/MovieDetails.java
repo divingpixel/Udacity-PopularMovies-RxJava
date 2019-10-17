@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.divingpixel.popularmovies.database.MoviesDatabase;
 import com.divingpixel.popularmovies.datamodel.MyMovieEntry;
+import com.divingpixel.popularmovies.internet.ConnectionStatus;
 import com.divingpixel.popularmovies.internet.TheMovieDBClient;
 import com.divingpixel.popularmovies.datamodel.TheMovieDBReview;
 import com.divingpixel.popularmovies.datamodel.TheMovieDBTrailer;
@@ -231,7 +232,7 @@ public class MovieDetails extends AppCompatActivity {
     }
 
     private void getReviews() {
-        if (PopularMovies.isConnected) {
+        if (ConnectionStatus.isConnected(this)) {
             disposableDetails = TheMovieDBClient.getInstance()
                     .getMovieReviews(selectedMovie.getId())
                     .subscribeOn(Schedulers.io())
@@ -253,7 +254,7 @@ public class MovieDetails extends AppCompatActivity {
     }
 
     private void getTrailers() {
-        if (PopularMovies.isConnected) {
+        if (ConnectionStatus.isConnected(this)) {
             disposableDetails = TheMovieDBClient.getInstance()
                     .getMovieTrailers(selectedMovie.getId())
                     .subscribeOn(Schedulers.io())
