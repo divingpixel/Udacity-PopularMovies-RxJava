@@ -16,7 +16,6 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.divingpixel.popularmovies.database.MoviesDatabase;
 import com.divingpixel.popularmovies.datamodel.MyMovieEntry;
 import com.divingpixel.popularmovies.internet.ConnectionStatus;
 
@@ -48,7 +47,6 @@ public class PopularMovies extends AppCompatActivity {
     RecyclerView recyclerView;
     TextView emptyView;
     View loadingProgress;
-    MoviesDatabase moviesDB;
     Context mainContext;
 
     private DisposableObserver<List<MyMovieEntry>> disposable;
@@ -61,7 +59,6 @@ public class PopularMovies extends AppCompatActivity {
         setContentView(R.layout.start_screen);
 
         mainContext = this;
-        moviesDB = MoviesDatabase.getInstance(mainContext);
         movieAdapter = new MovieAdapter(movieList);
         viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
 
@@ -98,7 +95,8 @@ public class PopularMovies extends AppCompatActivity {
         if (savedInstanceState != null && savedInstanceState.containsKey(INSTANCE_CATEGORY)) {
             category = savedInstanceState.getString(INSTANCE_CATEGORY, CATEGORY_POPULAR);
         } else {
-            viewModel.fillDatabase(category);
+            viewModel.fillDatabase(CATEGORY_POPULAR);
+            viewModel.fillDatabase(CATEGORY_TOP_RATED);
         }
     }
 

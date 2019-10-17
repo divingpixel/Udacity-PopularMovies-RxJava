@@ -20,10 +20,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.divingpixel.popularmovies.database.MoviesDatabase;
 import com.divingpixel.popularmovies.datamodel.MyMovieEntry;
-import com.divingpixel.popularmovies.internet.ConnectionStatus;
-import com.divingpixel.popularmovies.internet.TheMovieDBClient;
 import com.divingpixel.popularmovies.datamodel.TheMovieDBReview;
 import com.divingpixel.popularmovies.datamodel.TheMovieDBTrailer;
+import com.divingpixel.popularmovies.internet.ConnectionStatus;
 import com.squareup.picasso.Picasso;
 
 import java.text.ParseException;
@@ -34,7 +33,7 @@ import java.util.List;
 import java.util.Locale;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.observers.DisposableCompletableObserver;
 import io.reactivex.observers.DisposableSingleObserver;
 import io.reactivex.schedulers.Schedulers;
@@ -55,8 +54,8 @@ public class MovieDetails extends AppCompatActivity {
     // Default value for the item id
     private static final int DEFAULT_MOVIE_ID = -1;
 
-    private DisposableSingleObserver disposableMovie, disposableDetails;
-    private Disposable dbDisposable;
+    private MovieDetailsViewModel viewModel;
+    private CompositeDisposable disposable = new CompositeDisposable();
     private int movieId = DEFAULT_MOVIE_ID;
     private MyMovieEntry selectedMovie;
     private List<TheMovieDBReview> reviews = new ArrayList<>();
@@ -72,102 +71,55 @@ public class MovieDetails extends AppCompatActivity {
 
         mDb = MoviesDatabase.getInstance(getApplicationContext());
 
-        //set-up the heart button
-        favoriteButton = findViewById(R.id.detail_favorite);
-        favoriteButton.setOnClickListener(v -> {
-            selectedMovie.setFavorite(!selectedMovie.isFavorite());
-            dbDisposable = mDb.myMovieDAO().updateMovie(selectedMovie)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(Schedulers.io())
-                    .subscribeWith(new DisposableCompletableObserver() {
-                        @Override
-                        public void onComplete() {
-                        }
+        if (ConnectionStatus.isConnected(getApplicationContext())) {
+            //retrieve the item id and sets up the interface
+            Intent intent = getIntent();
 
-                        @Override
-                        public void onError(Throwable e) {
-                            Log.e(LOG_TAG, "ERROR UPDATING DATABASE ITEM", e);
-                        }
-                    });
-            setFavoriteButton();
-        });
+            if (movieId == DEFAULT_MOVIE_ID && intent.hasExtra(EXTRA_MOVIE_ID)) {
+                movieId = intent.getIntExtra(EXTRA_MOVIE_ID, DEFAULT_MOVIE_ID);
+            }
 
-        //retrieve the item id and sets up the interface
-        Intent intent = getIntent();
+            if (savedInstanceState != null && savedInstanceState.containsKey(INSTANCE_MOVIE_ID)) {
+                movieId = savedInstanceState.getInt(INSTANCE_MOVIE_ID, DEFAULT_MOVIE_ID);
+            }
 
-        if (movieId == DEFAULT_MOVIE_ID && intent.hasExtra(EXTRA_MOVIE_ID)) {
-            movieId = intent.getIntExtra(EXTRA_MOVIE_ID, DEFAULT_MOVIE_ID);
-        }
+            if (movieId != DEFAULT_MOVIE_ID) {
+                // get the viewModel instance
+                MovieDetailsViewModelFactory factory = new MovieDetailsViewModelFactory(mDb, movieId);
+                viewModel = ViewModelProviders.of(this, factory).get(MovieDetailsViewModel.class);
 
-        if (savedInstanceState != null && savedInstanceState.containsKey(INSTANCE_MOVIE_ID)) {
-            movieId = savedInstanceState.getInt(INSTANCE_MOVIE_ID, DEFAULT_MOVIE_ID);
-        }
+                Log.v(LOG_TAG, "GETTING MOVIE DETAILS FOR : " + viewModel.getMovie().subscribeOn(Schedulers.io()).blockingGet().getTitle());
 
-        if (movieId != DEFAULT_MOVIE_ID) {
-            // populate the UI
-            MovieDetailsViewModelFactory factory = new MovieDetailsViewModelFactory(mDb, movieId);
-            final MovieDetailsViewModel viewModel = ViewModelProviders.of(this, factory).get(MovieDetailsViewModel.class);
-            disposableMovie = viewModel.getMovie()
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeWith(new DisposableSingleObserver<MyMovieEntry>() {
-                        @Override
-                        public void onSuccess(MyMovieEntry myMovieEntry) {
-                            selectedMovie = myMovieEntry;
-                            initUi();
-                            getTrailers();
-                            getReviews();
-                        }
+                //get the movie from the database
+                disposable.add(viewModel.getMovie()
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeWith(new DisposableSingleObserver<MyMovieEntry>() {
+                            @Override
+                            public void onSuccess(MyMovieEntry myMovieEntry) {
+                                selectedMovie = myMovieEntry;
+                                initUi();
+                            }
 
-                        @Override
-                        public void onError(Throwable e) {
-                        }
-                    });
+                            @Override
+                            public void onError(Throwable e) {
+                            }
+                        }));
 
-            //setUp TRAILERS recyclerView
-            trailersList = findViewById(R.id.detail_trailers_rv);
-            trailersList.setLayoutManager(new LinearLayoutManager(getBaseContext()));
-            trailersList.setItemAnimator(new DefaultItemAnimator());
-            trailersList.addOnItemTouchListener(new RecyclerTouchListener(getBaseContext(), trailersList, new RecyclerTouchListener.ClickListener() {
-                @Override
-                public void onClick(View view, int position) {
-                    String key = trailers.get(position).getKey();
-                    //prepares two intents ome for the youtube app other for the browser in case the app doesn't exist
-                    Intent appIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:" + key));
-                    Intent webIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.youtube.com/watch?v=" + key));
-                    try {
-                        startActivity(appIntent);
-                    } catch (ActivityNotFoundException ex) {
-                        startActivity(webIntent);
-                    }
-                }
-
-                @Override
-                public void onLongClick(View view, int position) {
-                }
-            }));
-
-            //setUp REVIEWS recyclerView
-            reviewsList = findViewById(R.id.detail_reviews_rv);
-            reviewsList.setLayoutManager(new LinearLayoutManager(getBaseContext()));
-            reviewsList.setItemAnimator(new DefaultItemAnimator());
-
+            } else {
+                finish();
+                Toast.makeText(this, "Invalid movie entry", Toast.LENGTH_SHORT).show();
+            }
         } else {
             finish();
-            Toast.makeText(this, "Invalid movie entry", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "No internet connectivity!", Toast.LENGTH_SHORT).show();
         }
     }
 
     @Override
     protected void onDestroy() {
-        if (disposableMovie != null && !disposableMovie.isDisposed()) {
-            disposableMovie.dispose();
-        }
-        if (disposableDetails != null && !disposableDetails.isDisposed()) {
-            disposableDetails.dispose();
-        }
-        if (dbDisposable != null && !dbDisposable.isDisposed()) {
-            dbDisposable.dispose();
+        if (disposable != null && !disposable.isDisposed()) {
+            disposable.dispose();
         }
         super.onDestroy();
     }
@@ -188,6 +140,8 @@ public class MovieDetails extends AppCompatActivity {
     }
 
     private void initUi() {
+
+        //set the text beside the back arrow
         switch (PopularMovies.category) {
             case CATEGORY_FAVORITES:
                 this.setTitle(R.string.menu_favorites);
@@ -228,51 +182,86 @@ public class MovieDetails extends AppCompatActivity {
         TextView synopsis = findViewById(R.id.detail_synopsis);
         synopsis.setText(selectedMovie.getSynopsis());
 
+        //set-up the heart button
+        favoriteButton = findViewById(R.id.detail_favorite);
+        favoriteButton.setOnClickListener(v -> {
+            selectedMovie.setFavorite(!selectedMovie.isFavorite());
+            disposable.add(mDb.myMovieDAO().updateMovie(selectedMovie)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(Schedulers.io())
+                    .subscribeWith(new DisposableCompletableObserver() {
+                        @Override
+                        public void onComplete() {
+                            setFavoriteButton();
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            Log.e(LOG_TAG, "ERROR UPDATING DATABASE ITEM", e);
+                        }
+                    }));
+        });
         setFavoriteButton();
-    }
 
-    private void getReviews() {
-        if (ConnectionStatus.isConnected(this)) {
-            disposableDetails = TheMovieDBClient.getInstance()
-                    .getMovieReviews(selectedMovie.getId())
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeWith(new DisposableSingleObserver<List<TheMovieDBReview>>() {
-                        @Override
-                        public void onSuccess(List<TheMovieDBReview> theMovieDBReviews) {
-                            Log.i(LOG_TAG, "REVIEWS FOUND : " + theMovieDBReviews.size());
-                            reviews = theMovieDBReviews;
-                            updateUi();
-                        }
+        //setUp TRAILERS recyclerView
+        trailersList = findViewById(R.id.detail_trailers_rv);
+        trailersList.setLayoutManager(new LinearLayoutManager(getBaseContext()));
+        trailersList.setItemAnimator(new DefaultItemAnimator());
+        trailersList.addOnItemTouchListener(new RecyclerTouchListener(getBaseContext(), trailersList, new RecyclerTouchListener.ClickListener() {
+            @Override
+            public void onClick(View view, int position) {
+                String key = trailers.get(position).getKey();
+                //prepares two intents ome for the youtube app other for the browser in case the app doesn't exist
+                Intent appIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:" + key));
+                Intent webIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.youtube.com/watch?v=" + key));
+                try {
+                    startActivity(appIntent);
+                } catch (ActivityNotFoundException ex) {
+                    startActivity(webIntent);
+                }
+            }
 
-                        @Override
-                        public void onError(Throwable e) {
-                            Log.e(LOG_TAG, "ERROR GETTING THE REVIEWS ", e);
-                        }
-                    });
-        }
-    }
+            @Override
+            public void onLongClick(View view, int position) {
+            }
+        }));
+        disposable.add(viewModel.getTrailers()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableSingleObserver<List<TheMovieDBTrailer>>() {
 
-    private void getTrailers() {
-        if (ConnectionStatus.isConnected(this)) {
-            disposableDetails = TheMovieDBClient.getInstance()
-                    .getMovieTrailers(selectedMovie.getId())
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeWith(new DisposableSingleObserver<List<TheMovieDBTrailer>>() {
-                        @Override
-                        public void onSuccess(List<TheMovieDBTrailer> theMovieDBTrailers) {
-                            Log.i(LOG_TAG, "TRAILERS FOUND : " + theMovieDBTrailers.size());
-                            trailers = theMovieDBTrailers;
-                            updateUi();
-                        }
+                    @Override
+                    public void onSuccess(List<TheMovieDBTrailer> theMovieDBTrailers) {
+                        trailers = theMovieDBTrailers;
+                        updateUi();
+                    }
 
-                        @Override
-                        public void onError(Throwable e) {
-                            Log.e(LOG_TAG, "ERROR GETTING THE TRAILERS ", e);
-                        }
-                    });
-        }
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.e(LOG_TAG, "ERROR RETRIEVING TRAILERS", e);
+                    }
+                }));
+
+        //setUp REVIEWS recyclerView
+        reviewsList = findViewById(R.id.detail_reviews_rv);
+        reviewsList.setLayoutManager(new LinearLayoutManager(getBaseContext()));
+        reviewsList.setItemAnimator(new DefaultItemAnimator());
+        disposable.add(viewModel.getReviews()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableSingleObserver<List<TheMovieDBReview>>() {
+
+                    @Override
+                    public void onSuccess(List<TheMovieDBReview> theMovieDBReview) {
+                        reviews = theMovieDBReview;
+                        updateUi();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.e(LOG_TAG, "ERROR RETRIEVING REVIEWS", e);
+                    }
+                }));
     }
 
     public void updateUi() {
