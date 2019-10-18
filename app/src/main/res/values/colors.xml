@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="colorCandyWhite">#FFFBEC</color>
-    <color name="colorBackground">#330000</color>
-    <color name="colorPrimary">#920000</color>
-    <color name="colorPrimaryDark">#610000</color>
-    <color name="colorPrimaryLight">#FFB74D</color>
-    <color name="colorPrimaryHiLight">#FFF176</color>
-    <color name="colorAccent">#FF9800</color>
+    <color name="colorBackgroundDark">#0E111D</color>
+    <color name="colorBackground">#1F2849</color>
+    <color name="colorPrimary">#0E111D</color>
+    <color name="colorPrimaryDark">#311B92</color>
+    <color name="colorPrimaryLight">#7C4DFF</color>
+    <color name="colorPrimaryHiLight">#F9FBE7</color>
+    <color name="colorAccent">#FFAB00</color>
+    <color name="colorAlternateAccent">#7C4DFF</color>
+    <color name="TMDBGreen">#01D277</color>
 </resources>

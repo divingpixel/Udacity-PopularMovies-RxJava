@@ -103,10 +103,10 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="@color/colorPrimaryLight"
-                        android:fontFamily="sans-serif-light"
+                        android:fontFamily="sans-serif-condensed-medium"
                         android:padding="@dimen/tiny_space"
                         android:text="@string/title_trailers"
-                        android:textColor="@color/colorPrimary"
+                        android:textColor="@color/colorCandyWhite"
                         android:textSize="@dimen/text_heading" />
 
                     <androidx.recyclerview.widget.RecyclerView
@@ -121,10 +121,10 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="@color/colorPrimaryLight"
-                        android:fontFamily="sans-serif-light"
+                        android:fontFamily="sans-serif-condensed-medium"
                         android:padding="@dimen/tiny_space"
                         android:text="@string/title_synopsis"
-                        android:textColor="@color/colorPrimary"
+                        android:textColor="@color/colorCandyWhite"
                         android:textSize="@dimen/text_heading" />
 
                     <TextView
@@ -144,10 +144,10 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="@color/colorPrimaryLight"
-                        android:fontFamily="sans-serif-light"
+                        android:fontFamily="sans-serif-condensed-medium"
                         android:padding="@dimen/tiny_space"
                         android:text="@string/title_reviews"
-                        android:textColor="@color/colorPrimary"
+                        android:textColor="@color/colorCandyWhite"
                         android:textSize="@dimen/text_heading" />
 
                     <androidx.recyclerview.widget.RecyclerView

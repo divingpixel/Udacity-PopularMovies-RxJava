@@ -6,7 +6,7 @@
     <dimen name="big_space">24dp</dimen>
     <dimen name="youtube_logo">20dp</dimen>
     <dimen name="favorite_overlay">16dp</dimen>
-    <dimen name="thumbnail_height">150dp</dimen>
+    <dimen name="thumbnail_height">180dp</dimen>
     <dimen name="poster_height">300dp</dimen>
     <dimen name="card_elevation">1dp</dimen>
     <dimen name="card_corner_radius">1dp</dimen>
