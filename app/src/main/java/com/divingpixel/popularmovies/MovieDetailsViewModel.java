@@ -1,5 +1,7 @@
 package com.divingpixel.popularmovies;
 
+import android.util.Log;
+
 import androidx.lifecycle.ViewModel;
 
 import com.divingpixel.popularmovies.database.MoviesDatabase;
@@ -24,6 +26,7 @@ class MovieDetailsViewModel extends ViewModel {
     MovieDetailsViewModel(MoviesDatabase database, int movieId) {
         movie = database.myMovieDAO().getMovieById(movieId);
         this.movieId = movieId;
+        Log.i(LOG_TAG,"GETTING TRAILERS AND REVIEWS");
         getMovieDBReviews();
         getMovieDBTrailers();
     }

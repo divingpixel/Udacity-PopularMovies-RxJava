@@ -8,13 +8,13 @@ import androidx.lifecycle.AndroidViewModel;
 
 import com.divingpixel.popularmovies.database.MoviesDatabase;
 import com.divingpixel.popularmovies.datamodel.MyMovieEntry;
-import com.divingpixel.popularmovies.internet.TheMovieDBClient;
 import com.divingpixel.popularmovies.datamodel.TheMovieDBMovie;
+import com.divingpixel.popularmovies.internet.TheMovieDBClient;
 
 import java.util.List;
 
 import io.reactivex.Observable;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.observers.DisposableCompletableObserver;
 import io.reactivex.observers.DisposableSingleObserver;
 import io.reactivex.schedulers.Schedulers;
@@ -28,8 +28,7 @@ public class MainViewModel extends AndroidViewModel {
     private static final String LOG_TAG = MainViewModel.class.getSimpleName();
     private Observable<List<MyMovieEntry>> popular, topRated, favorites;
     private MoviesDatabase moviesDB;
-    private DisposableSingleObserver<List<TheMovieDBMovie>> disposable;
-    private Disposable dbDisposable;
+    private CompositeDisposable disposable = new CompositeDisposable();
 
     public MainViewModel(@NonNull Application application) {
         super(application);
@@ -67,7 +66,7 @@ public class MainViewModel extends AndroidViewModel {
                                             dbMovie.getVote_average(),
                                             false);
 
-                            dbDisposable = moviesDB.myMovieDAO().insertMovie(selectedMovie)
+                            disposable.add(moviesDB.myMovieDAO().insertMovie(selectedMovie)
                                     .subscribeOn(Schedulers.io())
                                     .observeOn(Schedulers.io())
                                     .subscribeWith(new DisposableCompletableObserver() {
@@ -79,7 +78,7 @@ public class MainViewModel extends AndroidViewModel {
                                         public void onError(Throwable e) {
                                             Log.e(LOG_TAG, "ERROR UPDATING DATABASE ITEM", e);
                                         }
-                                    });
+                                    }));
                             Log.i(LOG_TAG, "MOVIE " + dbMovie.getTitle() + " IS NEW. ADDED TO DATABASE.");
                         }
 
@@ -104,7 +103,7 @@ public class MainViewModel extends AndroidViewModel {
                                     movie.getRating(),
                                     movie.isFavorite());
 
-                            dbDisposable = moviesDB.myMovieDAO().updateMovie(selectedMovie)
+                            disposable.add (moviesDB.myMovieDAO().updateMovie(selectedMovie)
                                     .subscribeOn(Schedulers.io())
                                     .observeOn(Schedulers.io())
                                     .subscribeWith(new DisposableCompletableObserver() {
@@ -116,7 +115,7 @@ public class MainViewModel extends AndroidViewModel {
                                         public void onError(Throwable e) {
                                             Log.e(LOG_TAG, "ERROR UPDATING DATABASE ITEM", e);
                                         }
-                                    });
+                                    }));
                             Log.i(LOG_TAG, "FOUND " + movie.getTitle() + " IN DATABASE. UPDATED.");
                         }
                     });
@@ -124,7 +123,7 @@ public class MainViewModel extends AndroidViewModel {
     }
 
     void fillDatabase(final String category) {
-        disposable = TheMovieDBClient.getInstance()
+        disposable.add(TheMovieDBClient.getInstance()
                 .getSelectedMovies(category)
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
@@ -141,7 +140,7 @@ public class MainViewModel extends AndroidViewModel {
                     public void onError(Throwable e) {
 
                     }
-                });
+                }));
 
     }
 
@@ -165,9 +164,6 @@ public class MainViewModel extends AndroidViewModel {
     protected void onCleared() {
         if (disposable != null && !disposable.isDisposed()) {
             disposable.dispose();
-        }
-        if (dbDisposable != null && !dbDisposable.isDisposed()) {
-            dbDisposable.dispose();
         }
         super.onCleared();
     }

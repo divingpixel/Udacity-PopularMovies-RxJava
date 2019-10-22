@@ -3,6 +3,7 @@ package com.divingpixel.popularmovies;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -51,13 +52,18 @@ public class PopularMovies extends AppCompatActivity {
     private Menu actionMenu;
 
     public static String category = CATEGORY_POPULAR;
-    private static final String LOG_TAG = PopularMovies.class.getSimpleName();
     public static final String INSTANCE_CATEGORY = "instance_category";
+    private static final String LOG_TAG = PopularMovies.class.getSimpleName();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.start_screen);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+            getSupportActionBar().setLogo(R.drawable.ic_launcher_foreground);
+            getSupportActionBar().setDisplayUseLogoEnabled(true);
+        }
 
         movieAdapter = new MovieAdapter(movieList);
         viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
@@ -95,10 +101,13 @@ public class PopularMovies extends AppCompatActivity {
         if (savedInstanceState != null && savedInstanceState.containsKey(INSTANCE_CATEGORY)) {
             category = savedInstanceState.getString(INSTANCE_CATEGORY, CATEGORY_POPULAR);
         } else {
+            Log.i(LOG_TAG, "DOWNLOADING MOVIES FROM THE INTERNET");
             viewModel.fillDatabase(CATEGORY_POPULAR);
             viewModel.fillDatabase(CATEGORY_TOP_RATED);
         }
+
     }
+
 
     @Override
     protected void onStart() {

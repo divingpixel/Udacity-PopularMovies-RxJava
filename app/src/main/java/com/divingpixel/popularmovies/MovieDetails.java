@@ -68,6 +68,11 @@ public class MovieDetails extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.movie_details);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+            getSupportActionBar().setLogo(R.drawable.ic_launcher_foreground);
+            getSupportActionBar().setDisplayUseLogoEnabled(true);
+         }
 
         mDb = MoviesDatabase.getInstance(getApplicationContext());
 
