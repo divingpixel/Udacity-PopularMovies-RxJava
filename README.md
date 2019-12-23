@@ -22,3 +22,7 @@ You’ll add more information to your movie details view:
 You will build a fully featured application that looks and feels natural on the latest Android operating system.
 
 ## The app
+
+![Popular movies](screens/popular.png "Popular movies")![Top rated movies](screens/top.png "Popular movies")![Favorite movies](screens/favorite.png "Popular movies")![Movie detail 1](screens/detail1.png "Popular movies")![Movie Detail 2](screens/detail2.png "Popular movies")
+
+I have used RxJava 2 extensively for all the background asyncronious tasks as you will be able to see if you fork this repository.
